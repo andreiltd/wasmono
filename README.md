@@ -1,6 +1,6 @@
 # Wasmono
 
-Buck2 toolchains for building WebAssembly components.
+Buck2 rules for building WebAssembly components.
 
 > ⚠️ **Experimental**: The structure and APIs are going to change to better support usage as a Buck2 
 [external cell](https://buck2.build/docs/users/advanced/external_cells/). Currently, this is a collection 
@@ -116,7 +116,31 @@ wasm_plug(
 
 ## Toolchains
 
-Includes Buck2 toolchains for:
+All toolchains are **hermetic** - they download specific versions of tools rather than relying on system installations. This ensures reproducible builds across different environments.
+
+Each toolchain is composed of two parts:
+
+1. **Distribution**: Downloads and extracts the tool binary
+2. **Toolchain**: Provides convenient wrappers and subcommands
+
+This separation makes it easy to control tool sources and versions:
+
+```python
+# Download the distribution
+download_wasm_tools(
+    name = "wasm_tools_dist",
+    version = "1.239.0",
+)
+
+# Create toolchain from distribution
+wasm_tools_toolchain(
+    name = "wasm_tools",
+    distribution = ":wasm_tools_dist",
+    visibility = ["PUBLIC"],
+)
+```
+
+Available toolchains:
 
 - **wasm-tools** - Component manipulation (https://github.com/bytecodealliance/wasm-tools)
 - **wit-bindgen** - Binding generation (https://github.com/bytecodealliance/wit-bindgen)
