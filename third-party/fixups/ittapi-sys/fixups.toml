@@ -1,0 +1,7 @@
+buildscript.run = false
+
+[[cxx_library]]
+name = "ittapi"
+srcs = ["c-library/src/ittnotify/ittnotify_static.c", "c-library/src/ittnotify/jitprofiling.c"]
+include_paths = ["c-library/src/ittnotify/", "c-library/include/"]
+add_dep = true

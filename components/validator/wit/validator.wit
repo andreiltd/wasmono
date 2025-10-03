@@ -1,0 +1,10 @@
+package wasmono:validator@0.1.0;
+
+interface validate {
+    validate-text: func(text: string) -> string;
+}
+
+world validator {
+    export validate;
+    import wasmono:regex/matcher@0.1.0;
+}

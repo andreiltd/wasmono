@@ -1,0 +1,5 @@
+cargo_env = ["CARGO_PKG_VERSION"]
+
+[buildscript.run]
+rustc_link_search = true
+env = { OPT_LEVEL = "3" }

@@ -1,0 +1,118 @@
+load("@prelude//toolchains:rust.bzl", "system_rust_toolchain")
+load("@prelude//toolchains:cxx.bzl", "system_cxx_toolchain")
+load("@prelude//toolchains:python.bzl", "system_python_bootstrap_toolchain", "system_python_toolchain")
+load("@prelude//toolchains:genrule.bzl", "system_genrule_toolchain")
+
+load("//cxx/wasi:defs.bzl", "download_wasi_sdk", "cxx_wasi_toolchain")
+load("//wasm/tools.bzl", "download_wasm_tools", "wasm_tools_toolchain")
+load("//wasm/bindgen.bzl", "download_wit_bindgen", "wit_bindgen_toolchain")
+load("//wasm/wac.bzl", "download_wac", "wac_toolchain")
+load("//wasm/wkg.bzl", "download_wkg", "wkg_toolchain")
+
+_DEFAULT_TRIPLE = select({
+    "config//os:wasi": select({
+        "config//cpu:wasm32": "wasm32-wasip2",
+    }),
+    "config//os:linux": select({
+        "config//cpu:arm64": "aarch64-unknown-linux-gnu",
+        "config//cpu:riscv64": "riscv64gc-unknown-linux-gnu",
+        "config//cpu:x86_64": "x86_64-unknown-linux-gnu",
+    }),
+    "config//os:macos": select({
+        "config//cpu:arm64": "aarch64-apple-darwin",
+        "config//cpu:x86_64": "x86_64-apple-darwin",
+    }),
+    "config//os:windows": select({
+        "config//cpu:arm64": "aarch64-pc-windows-msvc",
+        "config//cpu:x86_64": "x86_64-pc-windows-msvc",
+    }),
+})
+
+system_genrule_toolchain(
+    name = "genrule",
+    visibility = ["PUBLIC"],
+)
+
+system_rust_toolchain(
+    name = "rust",
+    default_edition = "2024",
+    rustc_target_triple = _DEFAULT_TRIPLE,
+    visibility = ["PUBLIC"],
+)
+
+system_cxx_toolchain(
+    name = "cxx",
+    visibility = ["PUBLIC"],
+)
+
+system_python_toolchain(
+    name = "python",
+    visibility = ["PUBLIC"],
+)
+
+system_python_bootstrap_toolchain(
+    name = "python_bootstrap",
+    visibility = ["PUBLIC"],
+)
+
+download_wasi_sdk(
+    name = "wasi_sdk",
+    version = "27.0",
+)
+
+cxx_wasi_toolchain(
+    name = "cxx_wasi",
+    distribution = ":wasi_sdk",
+    visibility = ["PUBLIC"],
+)
+
+cxx_wasi_toolchain(
+    name = "rust_linker",
+    distribution = ":wasi_sdk",
+    linker_tool = "wasm-ld",
+    visibility = ["PUBLIC"],
+)
+
+download_wasm_tools(
+    name = "wasm_tools_dist",
+    version = "1.239.0",
+)
+
+wasm_tools_toolchain(
+    name = "wasm_tools",
+    distribution = ":wasm_tools_dist",
+    visibility = ["PUBLIC"],
+)
+
+download_wit_bindgen(
+    name = "wit_bindgen_dist",
+    version = "0.46.0",
+)
+
+wit_bindgen_toolchain(
+    name = "wit_bindgen",
+    distribution = ":wit_bindgen_dist",
+    visibility = ["PUBLIC"],
+)
+
+download_wac(
+    name = "wac_dist",
+    version = "0.8.0",
+)
+
+wac_toolchain(
+    name = "wac",
+    distribution = ":wac_dist",
+    visibility = ["PUBLIC"],
+)
+
+download_wkg(
+    name = "wkg_dist",
+    version = "0.12.0",
+)
+
+wkg_toolchain(
+    name = "wkg",
+    distribution = ":wkg_dist",
+    visibility = ["PUBLIC"],
+)

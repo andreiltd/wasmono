@@ -1,0 +1,91 @@
+#!/usr/bin/env dotslash
+
+{
+  "name": "buck2",
+  "platforms": {
+    "macos-aarch64": {
+      "size": 30365830,
+      "hash": "blake3",
+      "digest": "ca459767e70c6c7a5283054d2e8f87aa5a92240ac06e60a8993c371b92dd8169",
+      "format": "zst",
+      "path": "buck2-aarch64-apple-darwin",
+      "providers": [
+        {
+          "url": "https://github.com/facebook/buck2/releases/download/2025-09-15/buck2-aarch64-apple-darwin.zst"
+        }
+      ]
+    },
+    "windows-aarch64": {
+      "size": 25959311,
+      "hash": "blake3",
+      "digest": "d290e334b927f6c11e3d59f04ba19ced7dbd312d41bb2e101a7d568aabcf19ad",
+      "format": "zst",
+      "path": "buck2-aarch64-pc-windows-msvc.exe",
+      "providers": [
+        {
+          "url": "https://github.com/facebook/buck2/releases/download/2025-09-15/buck2-aarch64-pc-windows-msvc.exe.zst"
+        }
+      ]
+    },
+    "linux-aarch64": {
+      "size": 31522329,
+      "hash": "blake3",
+      "digest": "fe096b81c167bd90883e90e8b39d4814ce36203e7735d0d262cacfaa2836409d",
+      "format": "zst",
+      "path": "buck2-aarch64-unknown-linux-musl",
+      "providers": [
+        {
+          "url": "https://github.com/facebook/buck2/releases/download/2025-09-15/buck2-aarch64-unknown-linux-musl.zst"
+        }
+      ]
+    },
+    "linux-riscv64": {
+      "size": 33984424,
+      "hash": "blake3",
+      "digest": "5436405fb5fa178ff38bc165469aaeb39665d71f15f9e465b0e84839ecde8c88",
+      "format": "zst",
+      "path": "buck2-riscv64gc-unknown-linux-gnu",
+      "providers": [
+        {
+          "url": "https://github.com/facebook/buck2/releases/download/2025-09-15/buck2-riscv64gc-unknown-linux-gnu.zst"
+        }
+      ]
+    },
+    "macos-x86_64": {
+      "size": 32117028,
+      "hash": "blake3",
+      "digest": "f90cb79e8bfb6b04d9d559f04e579edb32d37b3e9d5ce6780eb2116887388235",
+      "format": "zst",
+      "path": "buck2-x86_64-apple-darwin",
+      "providers": [
+        {
+          "url": "https://github.com/facebook/buck2/releases/download/2025-09-15/buck2-x86_64-apple-darwin.zst"
+        }
+      ]
+    },
+    "windows-x86_64": {
+      "size": 27044029,
+      "hash": "blake3",
+      "digest": "4054d65b917edf0d84dc412390a376245c2cd3ff41a7edb2afdd84f543059619",
+      "format": "zst",
+      "path": "buck2-x86_64-pc-windows-msvc.exe",
+      "providers": [
+        {
+          "url": "https://github.com/facebook/buck2/releases/download/2025-09-15/buck2-x86_64-pc-windows-msvc.exe.zst"
+        }
+      ]
+    },
+    "linux-x86_64": {
+      "size": 32913544,
+      "hash": "blake3",
+      "digest": "0dd7dabe3ae61cee3e2046765cd476fca00a714bdd3539e0cef6f7e343897b6a",
+      "format": "zst",
+      "path": "buck2-x86_64-unknown-linux-musl",
+      "providers": [
+        {
+          "url": "https://github.com/facebook/buck2/releases/download/2025-09-15/buck2-x86_64-unknown-linux-musl.zst"
+        }
+      ]
+    }
+  }
+}

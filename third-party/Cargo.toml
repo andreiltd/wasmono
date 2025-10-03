@@ -1,0 +1,19 @@
+[workspace]
+
+[package]
+name = "rust-third-party"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+# Dummy target to keep Cargo happy
+[[bin]]
+name = "fake"
+path = "/dev/null"
+
+[dependencies]
+anyhow = "1"
+regex = "1"
+wit-bindgen = "0.46"
+wasmtime = "37.0.1"
+wasmtime-wasi = { version = "37.0.1", default-features = false, features = ["p2"] }

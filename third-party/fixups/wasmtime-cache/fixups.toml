@@ -1,0 +1,2 @@
+env = { "GIT_REV" = "" }
+buildscript.run = false

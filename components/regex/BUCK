@@ -1,0 +1,24 @@
+load("@toolchains//wasm:component.bzl", "wasm_component")
+
+rust_binary(
+    name = "regex",
+    crate = "regex",
+    crate_root = "src/lib.rs",
+    edition = "2024",
+    srcs = glob(["src/**/*.rs"]) + glob(["wit/**/*.wit"]),
+    deps = [
+        "//third-party:regex",
+        "//third-party:wit-bindgen",
+    ],
+    env = {
+        "CARGO_MANIFEST_DIR": ".",
+    },
+    _cxx_toolchain = "toolchains//:rust_linker",
+)
+
+wasm_component(
+    name = "regex_component",
+    module = ":regex",
+    wit = "wit/regex.wit",
+    visibility = ['PUBLIC'],
+)

@@ -1,0 +1,9 @@
+package wasmono:regex@0.1.0;
+
+interface matcher {
+    first-match: func(regex: string, text: string) -> string;
+}
+
+world regex {
+    export matcher;
+}

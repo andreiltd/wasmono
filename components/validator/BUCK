@@ -1,0 +1,32 @@
+load("@toolchains//wasm:component.bzl", "wit_bindgen_cxx", "wasm_component", "wasm_plug")
+
+# Generate C++ bindings
+wit_bindgen_cxx(
+    name = "validator_bindings",
+    world = "wasmono:validator/validator",
+    wit = ["wit/validator.wit"],
+    deps = ["//components/regex:regex_component"],
+)
+
+# Build the C++ binary with WASM target
+cxx_binary(
+    name = "validator",
+    srcs = [":validator_bindings"] + ["src/validator.cpp"] ,
+    deps =  [":validator_bindings"],
+    _cxx_toolchain = "toolchains//:cxx_wasi",
+)
+
+# Create the WASM component
+wasm_component(
+    name = "validator_component",
+    module = ":validator",
+    wit = "wit/validator.wit",
+)
+
+# Compose regex into validator: regex -> validator
+wasm_plug(
+    name = "validator_with_regex",
+    socket = ":validator_component",
+    plugs = ["//components/regex:regex_component"],
+    visibility = ['PUBLIC'],
+)

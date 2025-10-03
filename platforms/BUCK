@@ -1,0 +1,7 @@
+platform(
+    name = "wasm32_wasi",
+    constraint_values = [
+        "config//cpu/constraints:wasm32",
+        "config//os/constraints:wasi",
+    ],
+)
