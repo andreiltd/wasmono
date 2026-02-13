@@ -44,13 +44,18 @@ load(
     ":releases.bzl",
     "wit_bindgen_releases",
 )
+load(
+    ":host.bzl",
+    "host_arch",
+    "host_os",
+)
 
 WitBindgenReleaseInfo = provider(
     # @unsorted-dict-items
     fields = {
-        "version": provider_field(typing.Any, default = None),
-        "url": provider_field(typing.Any, default = None),
-        "sha256": provider_field(typing.Any, default = None),
+        "version": provider_field(str),
+        "url": provider_field(str),
+        "sha256": provider_field(str),
     },
 )
 
@@ -69,27 +74,27 @@ def _get_wit_bindgen_release(version: str, platform: str) -> WitBindgenReleaseIn
     plat = release[platform]
     return WitBindgenReleaseInfo(
         version = version,
-        url = plat["tarball"],
+        url = plat["url"],
         sha256 = plat["shasum"],
     )
 
 WitBindgenDistributionInfo = provider(
     # @unsorted-dict-items
     fields = {
-        "version": provider_field(typing.Any, default = None),
-        "arch": provider_field(typing.Any, default = None),
-        "os": provider_field(typing.Any, default = None),
+        "version": provider_field(str),
+        "arch": provider_field(str),
+        "os": provider_field(str),
     },
 )
 
 def _wit_bindgen_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
-    # Create a symlink to the wit-bindgen binary for easy access
+    # Create a copy of the wit-bindgen binary for easy access
     dst = ctx.actions.declare_output("wit-bindgen")
-    path_tpl = "{}/" + ctx.attrs.prefix + "/wit-bindgen" + ctx.attrs.suffix
-    src = cmd_args(ctx.attrs.dist[DefaultInfo].default_outputs[0], format = path_tpl)
+    dist_output = ctx.attrs.dist[DefaultInfo].default_outputs[0]
+    src = cmd_args(dist_output, format = "{{}}/{}".format(ctx.attrs.prefix + "/wit-bindgen" + ctx.attrs.suffix))
 
     ctx.actions.run(
-        ["ln", "-sf", cmd_args(src, relative_to = (dst, 1)), dst.as_output()],
+        ["cp", src, dst.as_output()],
         category = "cp_wit_bindgen",
     )
 
@@ -123,26 +128,6 @@ wit_bindgen_distribution = rule(
     },
 )
 
-def _host_arch() -> str:
-    arch = host_info().arch
-    if arch.is_x86_64:
-        return "x86_64"
-    elif host_info().arch.is_aarch64:
-        return "aarch64"
-    else:
-        fail("Unsupported host architecture.")
-
-def _host_os() -> str:
-    os = host_info().os
-    if os.is_linux:
-        return "linux"
-    elif os.is_macos:
-        return "macos"
-    elif os.is_windows:
-        return "windows"
-    else:
-        fail("Unsupported host os.")
-
 def download_wit_bindgen(
         name: str,
         version: str,
@@ -157,9 +142,9 @@ def download_wit_bindgen(
         os: Target OS (defaults to host OS)
     """
     if arch == None:
-        arch = _host_arch()
+        arch = host_arch()
     if os == None:
-        os = _host_os()
+        os = host_os()
 
     archive_name = name + "-archive"
     release = _get_wit_bindgen_release(version, "{}-{}".format(arch, os))
@@ -183,12 +168,12 @@ def download_wit_bindgen(
 WitBindgenInfo = provider(
     # @unsorted-dict-items
     fields = {
-        "wit_bindgen": provider_field(typing.Any, default = None),
-        "rust": provider_field(typing.Any, default = None),
-        "cxx": provider_field(typing.Any, default = None),
-        "c": provider_field(typing.Any, default = None),
-        "print": provider_field(typing.Any, default = None),
-        "markdown": provider_field(typing.Any, default = None),
+        "wit_bindgen": provider_field(RunInfo),
+        "rust": provider_field(RunInfo),
+        "cxx": provider_field(RunInfo),
+        "c": provider_field(RunInfo),
+        "print": provider_field(RunInfo),
+        "markdown": provider_field(RunInfo),
     },
     doc = "Toolchain info provider for wit-bindgen"
 )

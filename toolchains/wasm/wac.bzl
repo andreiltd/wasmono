@@ -14,12 +14,24 @@ load(
     ":releases.bzl",
     "wac_releases",
 )
+load(
+    ":host.bzl",
+    "host_arch",
+    "host_os",
+)
+
+_WAC_OS_MAP = {
+    "linux": "unknown-linux-musl",
+    "macos": "apple-darwin",
+    "windows": "pc-windows-gnu",
+}
 
 WacReleaseInfo = provider(
+    # @unsorted-dict-items
     fields = {
-        "version": provider_field(typing.Any, default = None),
-        "url": provider_field(typing.Any, default = None),
-        "sha256": provider_field(typing.Any, default = None),
+        "version": provider_field(str),
+        "url": provider_field(str),
+        "sha256": provider_field(str),
     },
     doc = """WacReleaseInfo: Metadata for a specific prebuilt `wac` release asset.""",
 )
@@ -46,21 +58,21 @@ def _get_wac_release(version: str, platform: str) -> WacReleaseInfo:
     )
 
 WacDistributionInfo = provider(
+    # @unsorted-dict-items
     fields = {
-        "version": provider_field(typing.Any, default = None),
-        "arch": provider_field(typing.Any, default = None),
-        "os": provider_field(typing.Any, default = None),
+        "version": provider_field(str),
+        "arch": provider_field(str),
+        "os": provider_field(str),
     },
     doc = """WacInfo: Toolchain provider exposing the `wac` binary and convenient RunInfo wrappers for common subcommands.""",
 )
 
 def _wac_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
-    # Create a stable symlink named "wac" that points to the downloaded file
+    # Create a copy of the wac binary
     dst = ctx.actions.declare_output("wac")
-    src = cmd_args(ctx.attrs.dist[DefaultInfo].default_outputs[0], format = "{}")
 
     ctx.actions.run(
-        ["ln", "-sf", cmd_args(src, relative_to = (dst, 1)), dst.as_output()],
+        ["cp", ctx.attrs.dist[DefaultInfo].default_outputs[0], dst.as_output()],
         category = "cp_wac",
     )
 
@@ -89,26 +101,6 @@ wac_distribution = rule(
     },
 )
 
-def _host_arch() -> str:
-    arch = host_info().arch
-    if arch.is_x86_64:
-        return "x86_64"
-    elif host_info().arch.is_aarch64:
-        return "aarch64"
-    else:
-        fail("Unsupported host architecture.")
-
-def _host_os() -> str:
-    os = host_info().os
-    if os.is_linux:
-        return "unknown-linux-musl"
-    elif os.is_macos:
-        return "apple-darwin"
-    elif os.is_windows:
-        return "pc-windows-gnu"
-    else:
-        fail("Unsupported host os.")
-
 def download_wac(name: str, version: str, arch: [None, str] = None, os: [None, str] = None):
     """
     Download and register a prebuilt `wac` CLI release as a local distribution and
@@ -116,9 +108,9 @@ def download_wac(name: str, version: str, arch: [None, str] = None, os: [None, s
     """
 
     if arch == None:
-        arch = _host_arch()
+        arch = host_arch()
     if os == None:
-        os = _host_os()
+        os = host_os(_WAC_OS_MAP)
 
     release = _get_wac_release(version, "{}-{}".format(arch, os))
 
@@ -139,13 +131,14 @@ def download_wac(name: str, version: str, arch: [None, str] = None, os: [None, s
     )
 
 WacInfo = provider(
+    # @unsorted-dict-items
     fields = {
-        "wac": provider_field(typing.Any, default = None),
-        "plug": provider_field(typing.Any, default = None),
-        "compose": provider_field(typing.Any, default = None),
-        "parse": provider_field(typing.Any, default = None),
-        "resolve": provider_field(typing.Any, default = None),
-        "targets": provider_field(typing.Any, default = None),
+        "wac": provider_field(RunInfo),
+        "plug": provider_field(RunInfo),
+        "compose": provider_field(RunInfo),
+        "parse": provider_field(RunInfo),
+        "resolve": provider_field(RunInfo),
+        "targets": provider_field(RunInfo),
     },
     doc = "Toolchain info provider for wac"
 )

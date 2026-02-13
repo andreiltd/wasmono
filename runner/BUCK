@@ -1,34 +1,14 @@
-version = "37.0.1"
-url_base = "https://github.com/bytecodealliance/wasmtime/releases/download/v{}/wasmtime-v{}-".format(version, version)
-
-# TODO add other oses
-http_archive(
-    name = "wasmtime-archive",
-    urls = select({
-        "config//os:linux": [url_base + "x86_64-linux.tar.xz"],
-    }),
-    sha256 = select({
-        "config//os:linux": "7eb9dc74923898f4f2dec4948abd91b7c05a5198045439285d9b38fde5104c07",
-    }),
-    strip_prefix = select({
-        "config//os:linux": "wasmtime-v37.0.1-x86_64-linux",
-    }),
-)
-
-genrule(
-    name = "wasmtime-bin",
-    out = "wasmtime",
-    cmd = "cp $(location :wasmtime-archive)/wasmtime $OUT",
-    cmd_exe = "copy $(location :wasmtime-archive)\\wasmtime.exe %OUT%",
-    executable = True,
-)
-
-sh_binary(
+rust_binary(
     name = "validator",
-    main = "validate.sh",
-    resources = [
-        ":wasmtime-bin",
-        "//components/validator:validator_with_regex",
+    srcs = glob(["src/**/*.rs"]),
+    edition = "2024",
+    deps = [
+        "//third-party:anyhow",
+        "//third-party:wasmtime",
+        "//third-party:wasmtime-wasi",
     ],
+    env = {
+        "COMPONENT_PATH": "$(location //components/validator:validator_with_regex)",
+    },
     visibility = ["PUBLIC"],
 )

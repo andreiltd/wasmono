@@ -8,6 +8,7 @@ load("//wasm/tools.bzl", "download_wasm_tools", "wasm_tools_toolchain")
 load("//wasm/bindgen.bzl", "download_wit_bindgen", "wit_bindgen_toolchain")
 load("//wasm/wac.bzl", "download_wac", "wac_toolchain")
 load("//wasm/wkg.bzl", "download_wkg", "wkg_toolchain")
+load("//wasm/jco.bzl", "system_jco_toolchain")
 
 _DEFAULT_TRIPLE = select({
     "config//os:wasi": select({
@@ -114,5 +115,10 @@ download_wkg(
 wkg_toolchain(
     name = "wkg",
     distribution = ":wkg_dist",
+    visibility = ["PUBLIC"],
+)
+
+system_jco_toolchain(
+    name = "jco",
     visibility = ["PUBLIC"],
 )

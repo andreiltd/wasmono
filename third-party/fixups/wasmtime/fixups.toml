@@ -1,5 +1,12 @@
-cargo_env = ["CARGO_PKG_VERSION"]
+cargo_env = ["CARGO_PKG_VERSION", "CARGO_PKG_VERSION_MAJOR", "CARGO_PKG_VERSION_MINOR", "CARGO_PKG_VERSION_PATCH"]
 
 [buildscript.run]
-rustc_link_search = true
 env = { OPT_LEVEL = "3" }
+
+# The wasmtime build script compiles helpers.c into libwasmtime-helpers.a.
+# Since this prelude doesn't support rustc_link_search, we compile helpers.c
+# as a separate cxx_library and add it as a native dep.
+[[cxx_library]]
+name = "wasmtime-helpers"
+srcs = ["src/runtime/vm/helpers.c"]
+compiler_flags = ["-DVERSIONED_SUFFIX=_41_0_3", "-DFEATURE_DEBUG_BUILTINS"]

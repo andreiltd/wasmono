@@ -1,1 +1,7 @@
 buildscript.run = false
+
+# Build script compiles gdbjit.c; we do it as a cxx_library instead.
+[[cxx_library]]
+name = "gdbjit-helpers"
+srcs = ["gdbjit.c"]
+compiler_flags = ["-DVERSIONED_SUFFIX=_41_0_3"]

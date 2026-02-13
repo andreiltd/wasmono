@@ -44,13 +44,18 @@ load(
     "wasm_tools_releases",
     "wasi_adapters",
 )
+load(
+    ":host.bzl",
+    "host_arch",
+    "host_os",
+)
 
 WasmToolsReleaseInfo = provider(
     # @unsorted-dict-items
     fields = {
-        "version": provider_field(typing.Any, default = None),
-        "url": provider_field(typing.Any, default = None),
-        "sha256": provider_field(typing.Any, default = None),
+        "version": provider_field(str),
+        "url": provider_field(str),
+        "sha256": provider_field(str),
     },
 )
 
@@ -71,29 +76,29 @@ def _get_wasm_tools_release(
     wasm_tools_platform = wasm_tools_version[platform]
     return WasmToolsReleaseInfo(
         version = version,
-        url = wasm_tools_platform["tarball"],
+        url = wasm_tools_platform["url"],
         sha256 = wasm_tools_platform["shasum"],
     )
 
 WasmToolsDistributionInfo = provider(
     # @unsorted-dict-items
     fields = {
-        "version": provider_field(typing.Any, default = None),
-        "arch": provider_field(typing.Any, default = None),
-        "os": provider_field(typing.Any, default = None),
-        "reactor_adapter": provider_field(typing.Any, default = None),
-        "command_adapter": provider_field(typing.Any, default = None),
+        "version": provider_field(str),
+        "arch": provider_field(str),
+        "os": provider_field(str),
+        "reactor_adapter": provider_field(Artifact),
+        "command_adapter": provider_field(Artifact),
     },
 )
 
 def _wasm_tools_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
-    # Create a symlink to the wasm-tools binary for easy access (following Zig pattern)
+    # Create a copy of the wasm-tools binary for easy access
     dst = ctx.actions.declare_output("wasm-tools")
-    path_tpl = "{}/" + ctx.attrs.prefix + "/wasm-tools" + ctx.attrs.suffix
-    src = cmd_args(ctx.attrs.dist[DefaultInfo].default_outputs[0], format = path_tpl)
+    dist_output = ctx.attrs.dist[DefaultInfo].default_outputs[0]
+    src = cmd_args(dist_output, format = "{{}}/{}".format(ctx.attrs.prefix + "/wasm-tools" + ctx.attrs.suffix))
 
     ctx.actions.run(
-        ["ln", "-sf", cmd_args(src, relative_to = (dst, 1)), dst.as_output()],
+        ["cp", src, dst.as_output()],
         category = "cp_wasm_tools",
     )
 
@@ -131,26 +136,6 @@ wasm_tools_distribution = rule(
     },
 )
 
-def _host_arch() -> str:
-    arch = host_info().arch
-    if arch.is_x86_64:
-        return "x86_64"
-    elif host_info().arch.is_aarch64:
-        return "aarch64"
-    else:
-        fail("Unsupported host architecture.")
-
-def _host_os() -> str:
-    os = host_info().os
-    if os.is_linux:
-        return "linux"
-    elif os.is_macos:
-        return "macos"
-    elif os.is_windows:
-        return "windows"
-    else:
-        fail("Unsupported host os.")
-
 def download_wasm_tools(
         name: str,
         version: str,
@@ -158,9 +143,9 @@ def download_wasm_tools(
         arch: [None, str] = None,
         os: [None, str] = None):
     if arch == None:
-        arch = _host_arch()
+        arch = host_arch()
     if os == None:
-        os = _host_os()
+        os = host_os()
 
     archive_name = name + "-archive"
     release = _get_wasm_tools_release(version, "{}-{}".format(arch, os))
@@ -206,16 +191,16 @@ def download_wasm_tools(
 WasmToolsInfo = provider(
     # @unsorted-dict-items
     fields = {
-        "wasm_tools": provider_field(typing.Any, default = None),
-        "component": provider_field(typing.Any, default = None),
-        "compose": provider_field(typing.Any, default = None),
-        "validate": provider_field(typing.Any, default = None),
-        "print": provider_field(typing.Any, default = None),
-        "parse": provider_field(typing.Any, default = None),
-        "strip": provider_field(typing.Any, default = None),
-        "metadata": provider_field(typing.Any, default = None),
-        "reactor_adapter": provider_field(typing.Any, default = None),
-        "command_adapter": provider_field(typing.Any, default = None),
+        "wasm_tools": provider_field(RunInfo),
+        "component": provider_field(RunInfo),
+        "compose": provider_field(RunInfo),
+        "validate": provider_field(RunInfo),
+        "print": provider_field(RunInfo),
+        "parse": provider_field(RunInfo),
+        "strip": provider_field(RunInfo),
+        "metadata": provider_field(RunInfo),
+        "reactor_adapter": provider_field(Artifact),
+        "command_adapter": provider_field(Artifact),
     },
     doc = "Toolchain info provider for wasm-tools"
 )

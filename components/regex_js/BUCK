@@ -1,0 +1,10 @@
+load("@toolchains//wasm:component.bzl", "wasm_componentize_js")
+
+wasm_componentize_js(
+    name = "regex_component",
+    src = "src/matcher.js",
+    wit = "wit/regex.wit",
+    world = "regex",
+    disable = ["all"],
+    visibility = ["PUBLIC"],
+)

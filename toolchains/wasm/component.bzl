@@ -51,24 +51,9 @@ This module provides comprehensive WASM component tooling:
     )
 """
 
-load("//wasm:bindgen.bzl", "WitBindgenInfo")
-load("//wasm:tools.bzl", "WasmToolsInfo")
-load("//wasm:wac.bzl", "WacInfo")
-load("//wasm:wkg.bzl", "WkgInfo")
-load("//wasm:transition.bzl", "wasm_transition")
-
 load("@prelude//:asserts.bzl", "asserts")
-
-load(
-    "@prelude//cxx:cxx_toolchain_types.bzl",
-    "CxxToolchainInfo",
-)
-
-load(
-    "@prelude//cxx:cxx_context.bzl",
-    "get_cxx_toolchain_info"
-)
-
+load("@prelude//cxx:cxx_context.bzl", "get_cxx_toolchain_info")
+load("@prelude//cxx:cxx_toolchain_types.bzl", "CxxToolchainInfo")
 load(
     "@prelude//cxx:preprocessor.bzl",
     "CPreprocessor",
@@ -76,7 +61,6 @@ load(
     "CPreprocessorInfo",
     "cxx_merge_cpreprocessors",
 )
-
 load(
     "@prelude//linking:link_info.bzl",
     "ObjectsLinkable",
@@ -85,18 +69,20 @@ load(
     "LinkInfos",
     "create_merged_link_info",
 )
-
-load(
-    "@prelude//linking:link_groups.bzl",
-    "merge_link_group_lib_info",
-)
-
+load("@prelude//linking:link_groups.bzl", "merge_link_group_lib_info")
 load(
     "@prelude//linking:shared_libraries.bzl",
     "SharedLibraries",
     "SharedLibraryInfo",
     "merge_shared_libraries",
 )
+
+load("//wasm:bindgen.bzl", "WitBindgenInfo")
+load("//wasm:jco.bzl", "JcoInfo")
+load("//wasm:tools.bzl", "WasmToolsInfo")
+load("//wasm:transition.bzl", "wasm_transition")
+load("//wasm:wac.bzl", "WacInfo")
+load("//wasm:wkg.bzl", "WkgInfo")
 
 # ============================================================================
 # PROVIDERS AND COMMON UTILITIES
@@ -233,10 +219,6 @@ def _resolve_single_from_deps(deps, extractor, kind_desc):
 
 def _wasm_component_impl(ctx: AnalysisContext) -> list[Provider]:
     """Create a WASM component from a single core module and optional WIT interface."""
-    if not ctx.attrs.module:
-        fail("wasm_component: 'module' attribute is required and must be a configured dependency producing a .wasm module")
-
-    # Resolve the real module artifact from the configured dep
     module_dep = ctx.attrs.module
     module_file = _resolve_single_from_deps([module_dep], _wasm_modules_from_deps, "core wasm module")
 
@@ -247,15 +229,13 @@ def _wasm_component_impl(ctx: AnalysisContext) -> list[Provider]:
     output_file = ctx.actions.declare_output("{}.component.wasm".format(ctx.label.name))
     adapter_arg = cmd_args(wasm_tools_info.reactor_adapter, format = "wasi_snapshot_preview1={}")
 
-    new_cmd = cmd_args(wasm_tools_info.component)
-    new_cmd.add("new")
-    new_cmd.add(module_file)
-    new_cmd.add("--adapt")
-    new_cmd.add(adapter_arg)
-    new_cmd.add("-o")
-    new_cmd.add(output_file.as_output())
+    cmd = cmd_args(
+        wasm_tools_info.component, "new", module_file,
+        "--adapt", adapter_arg,
+        "-o", output_file.as_output(),
+    )
 
-    ctx.actions.run(new_cmd, category = "wasm_component_new")
+    ctx.actions.run(cmd, category = "wasm_component_new")
 
     return [
         DefaultInfo(default_output = output_file),
@@ -269,8 +249,8 @@ def _wasm_component_impl(ctx: AnalysisContext) -> list[Provider]:
 wasm_component = rule(
     impl = _wasm_component_impl,
     attrs = {
-        "module": attrs.option(
-            attrs.transition_dep(cfg = wasm_transition),
+        "module": attrs.transition_dep(
+            cfg = wasm_transition,
             doc = "Single configured dependency that produces a core .wasm module",
         ),
         "wit": attrs.option(
@@ -337,9 +317,9 @@ wasm_component_link = rule(
             attrs.transition_dep(cfg = wasm_transition),
             doc = "List of deps that produce .wasm or .component.wasm files",
         ),
-        "skip_validation": attrs.bool(default = False),
-        "stub_missing_functions": attrs.bool(default = False),
-        "use_builtin_libdl": attrs.bool(default = False),
+        "skip_validation": attrs.bool(default = False, doc = "Skip validation of the linked component"),
+        "stub_missing_functions": attrs.bool(default = False, doc = "Stub out any missing function imports"),
+        "use_builtin_libdl": attrs.bool(default = False, doc = "Use the built-in libdl implementation"),
         "_wasm_tools_toolchain": attrs.toolchain_dep(
             default = "toolchains//:wasm_tools",
             providers = [WasmToolsInfo],
@@ -354,10 +334,6 @@ wasm_component_link = rule(
 
 def _wasm_validate_impl(ctx: AnalysisContext) -> list[Provider]:
     """Validate a single input (module/component/wat)."""
-    if not ctx.attrs.input:
-        fail("wasm_validate: 'input' attribute is required")
-
-    # input is a configured dep
     input_file = _resolve_single_from_deps([ctx.attrs.input], _all_wasm_files_from_deps, "input artifact to validate")
     wasm_tools_info = ctx.attrs._wasm_tools_toolchain[WasmToolsInfo]
     output_file = ctx.actions.declare_output("{}.validation.txt".format(ctx.label.name))
@@ -374,8 +350,7 @@ def _wasm_validate_impl(ctx: AnalysisContext) -> list[Provider]:
 wasm_validate = rule(
     impl = _wasm_validate_impl,
     attrs = {
-        "input": attrs.option(
-            attrs.dep(),
+        "input": attrs.dep(
             doc = "Configured dep that produces a .wat, .wasm or .component.wasm file to validate",
         ),
         "_wasm_tools_toolchain": attrs.toolchain_dep(
@@ -388,9 +363,6 @@ wasm_validate = rule(
 
 def _wasm_print_impl(ctx: AnalysisContext) -> list[Provider]:
     """Print a single wasm/component to text (.wat)."""
-    if not ctx.attrs.input:
-        fail("wasm_print: 'input' attribute is required")
-
     input_file = _resolve_single_from_deps([ctx.attrs.input], _all_wasm_files_from_deps, "input artifact to print")
     wasm_tools_info = ctx.attrs._wasm_tools_toolchain[WasmToolsInfo]
     output_file = ctx.actions.declare_output("{}.wat".format(ctx.label.name))
@@ -407,8 +379,7 @@ def _wasm_print_impl(ctx: AnalysisContext) -> list[Provider]:
 wasm_print = rule(
     impl = _wasm_print_impl,
     attrs = {
-        "input": attrs.option(
-            attrs.dep(),
+        "input": attrs.dep(
             doc = "Configured dep producing wasm or component to convert to text",
         ),
         "_wasm_tools_toolchain": attrs.toolchain_dep(
@@ -563,7 +534,7 @@ _wit_bindgen_common_attrs = {
     ),
     "world": attrs.option(
         attrs.string(),
-        doc = "World name (required to predictably genenrate rules at analysis time)",
+        doc = "World name (required to predictably generate output filenames at analysis time)",
     ),
     "async_config": attrs.list(
         attrs.string(),
@@ -842,9 +813,6 @@ def _wasm_package_impl(ctx: AnalysisContext) -> list[Provider]:
         cmd.add(output_format)
 
     # Add optional flags
-    if ctx.attrs.overwrite:
-        cmd.add("--overwrite")
-
     if ctx.attrs.registry:
         cmd.add("--registry")
         cmd.add(ctx.attrs.registry)
@@ -895,10 +863,6 @@ wasm_package = rule(
             default = "auto",
             doc = "Output format: 'auto' (default, detects from filename), 'wasm', or 'wit'",
         ),
-        "overwrite": attrs.bool(
-            default = False,
-            doc = "Overwrite any existing output file",
-        ),
         "registry": attrs.option(
             attrs.string(),
             default = None,
@@ -920,4 +884,71 @@ wasm_package = rule(
         ),
     },
     doc = "Downloads a Wasm package from a registry",
+)
+
+# ============================================================================
+# WASM COMPONENTIZE JS (build component from JavaScript using jco)
+# ============================================================================
+
+def _wasm_componentize_js_impl(ctx: AnalysisContext) -> list[Provider]:
+    """Build a WASM component from JavaScript source using jco componentize."""
+    jco_info = ctx.attrs._jco_toolchain[JcoInfo]
+
+    output_file = ctx.actions.declare_output("{}.component.wasm".format(ctx.label.name))
+
+    cmd = cmd_args(jco_info.componentize)
+    cmd.add(ctx.attrs.src)
+    cmd.add("--wit")
+    cmd.add(ctx.attrs.wit)
+
+    if ctx.attrs.world:
+        cmd.add("--world-name")
+        cmd.add(ctx.attrs.world)
+
+    for feature in ctx.attrs.disable:
+        cmd.add("--disable")
+        cmd.add(feature)
+
+    cmd.add("-o")
+    cmd.add(output_file.as_output())
+
+    # jco componentize uses TMPDIR for its internal StarlingMonkey working
+    # directory. Buck2 may not propagate a valid TMPDIR to local actions,
+    # causing jco to fail when resolving its generated index.js wrapper.
+    ctx.actions.run(cmd, category = "wasm_componentize_js", env = {"TMPDIR": "/tmp"})
+
+    return [
+        DefaultInfo(default_output = output_file),
+        WasmInfo(
+            module = None,
+            component = output_file,
+            wit = [ctx.attrs.wit],
+        ),
+    ]
+
+wasm_componentize_js = rule(
+    impl = _wasm_componentize_js_impl,
+    attrs = {
+        "src": attrs.source(
+            doc = "JavaScript source file to componentize",
+        ),
+        "wit": attrs.source(
+            doc = "WIT file or directory defining the component interface",
+        ),
+        "world": attrs.option(
+            attrs.string(),
+            default = None,
+            doc = "WIT world name to build (defaults to the single world in the WIT)",
+        ),
+        "disable": attrs.list(
+            attrs.enum(["clocks", "http", "random", "stdio", "fetch-event", "all"]),
+            default = [],
+            doc = "WASI features to disable",
+        ),
+        "_jco_toolchain": attrs.toolchain_dep(
+            default = "toolchains//:jco",
+            providers = [JcoInfo],
+        ),
+    },
+    doc = "Creates a WASM Component from JavaScript source using 'jco componentize'",
 )

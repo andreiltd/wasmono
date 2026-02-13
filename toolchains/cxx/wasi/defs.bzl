@@ -70,13 +70,23 @@ load(
     ":releases.bzl",
     "releases",
 )
+load(
+    "//wasm:host.bzl",
+    "host_arch",
+    "host_os",
+)
+
+_WASI_SDK_ARCH_MAP = {
+    "x86_64": "x86_64",
+    "aarch64": "arm64",
+}
 
 WasiSdkReleaseInfo = provider(
     # @unsorted-dict-items
     fields = {
-        "version": provider_field(typing.Any, default = None),
-        "url": provider_field(typing.Any, default = None),
-        "sha256": provider_field(typing.Any, default = None),
+        "version": provider_field(str),
+        "url": provider_field(str),
+        "sha256": provider_field(str),
     },
 )
 
@@ -104,11 +114,11 @@ def _get_wasi_sdk_release(
 WasiSdkDistributionInfo = provider(
     # @unsorted-dict-items
     fields = {
-        "version": provider_field(typing.Any, default = None),
-        "arch": provider_field(typing.Any, default = None),
-        "os": provider_field(typing.Any, default = None),
-        "bin_path": provider_field(typing.Any, default = None),
-        "sysroot_path": provider_field(typing.Any, default = None),
+        "version": provider_field(str),
+        "arch": provider_field(str),
+        "os": provider_field(str),
+        "bin_path": provider_field(str),
+        "sysroot_path": provider_field(str),
     },
 )
 
@@ -139,35 +149,15 @@ wasi_sdk_distribution = rule(
     },
 )
 
-def _host_arch() -> str:
-    arch = host_info().arch
-    if arch.is_x86_64:
-        return "x86_64"
-    elif host_info().arch.is_aarch64:
-        return "arm64"
-    else:
-        fail("Unsupported host architecture.")
-
-def _host_os() -> str:
-    os = host_info().os
-    if os.is_linux:
-        return "linux"
-    elif os.is_macos:
-        return "macos"
-    elif os.is_windows:
-        return "windows"
-    else:
-        fail("Unsupported host os.")
-
 def download_wasi_sdk(
         name: str,
         version: str,
         arch: [None, str] = None,
         os: [None, str] = None):
     if arch == None:
-        arch = _host_arch()
+        arch = _WASI_SDK_ARCH_MAP[host_arch()]
     if os == None:
-        os = _host_os()
+        os = host_os()
 
     archive_name = name + "-archive"
     release = _get_wasi_sdk_release(version, "{}-{}".format(arch, os))

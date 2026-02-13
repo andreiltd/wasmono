@@ -4,23 +4,23 @@ wasm_tools_releases = {
     "1.239.0": {
         "aarch64-linux": {
             "shasum": "54bb0fdad016a115bde8dd7d2cd63e88d0b136a44ab23ae9c3ff4d4d48d5fa4d",
-            "tarball": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.239.0/wasm-tools-1.239.0-aarch64-linux.tar.gz",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.239.0/wasm-tools-1.239.0-aarch64-linux.tar.gz",
         },
         "aarch64-macos": {
             "shasum": "b65777dcb9873b404e50774b54b61b703eb980cadb20ada175a8bf74bfe23706",
-            "tarball": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.239.0/wasm-tools-1.239.0-aarch64-macos.tar.gz",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.239.0/wasm-tools-1.239.0-aarch64-macos.tar.gz",
         },
         "x86_64-linux": {
             "shasum": "be1764c1718a2ed90cdd3e1ed2fe6e4c6b3e2b69fb6ba9a85bcafdca5146a3b9",
-            "tarball": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.239.0/wasm-tools-1.239.0-x86_64-linux.tar.gz",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.239.0/wasm-tools-1.239.0-x86_64-linux.tar.gz",
         },
         "x86_64-macos": {
             "shasum": "d62482e2bfe65a05f4c313f2d57b09736054e37f4dfe94b4bdf7b4713b03fa02",
-            "tarball": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.239.0/wasm-tools-1.239.0-x86_64-macos.tar.gz",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.239.0/wasm-tools-1.239.0-x86_64-macos.tar.gz",
         },
         "x86_64-windows": {
             "shasum": "039b1eaa170563f7623",
-            "tarball": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.239.0/wasm-tools-1.239.0-x86_64-windows.zip",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.239.0/wasm-tools-1.239.0-x86_64-windows.zip",
         },
     },
 }
@@ -29,23 +29,23 @@ wit_bindgen_releases = {
     "0.46.0": {
         "aarch64-linux": {
             "shasum": "37879138d1703f4063d167e882d3ecef24abd2df666d92a95bc5f8338644bfb4",
-            "tarball": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.46.0/wit-bindgen-0.46.0-aarch64-linux.tar.gz",
+            "url": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.46.0/wit-bindgen-0.46.0-aarch64-linux.tar.gz",
         },
         "aarch64-macos": {
             "shasum": "dc96da8f3d12bf5e2e3e3b00ce1474d2a8e77e36088752633380f0c85e18632c",
-            "tarball": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.46.0/wit-bindgen-0.46.0-aarch64-macos.tar.gz",
+            "url": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.46.0/wit-bindgen-0.46.0-aarch64-macos.tar.gz",
         },
         "x86_64-linux": {
             "shasum": "8f426d9b0ed0150c71feea697effe4b90b1426a49e22e48bc1d4f4c6396bf771",
-            "tarball": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.46.0/wit-bindgen-0.46.0-x86_64-linux.tar.gz",
+            "url": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.46.0/wit-bindgen-0.46.0-x86_64-linux.tar.gz",
         },
         "x86_64-macos": {
             "shasum": "98767eb96f2a181998fa35a1df932adf743403c5f621ed6eedaa7d7c0533d543",
-            "tarball": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.46.0/wit-bindgen-0.46.0-x86_64-macos.tar.gz",
+            "url": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.46.0/wit-bindgen-0.46.0-x86_64-macos.tar.gz",
         },
         "x86_64-windows": {
             "shasum": "95c6380ec7c1e385be8427a2da1206d90163fd66b6cbb573a516390988ccbad2",
-            "tarball": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.46.0/wit-bindgen-0.46.0-x86_64-windows.zip",
+            "url": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.46.0/wit-bindgen-0.46.0-x86_64-windows.zip",
         },
     },
 }

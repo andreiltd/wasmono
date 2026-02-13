@@ -14,12 +14,24 @@ load(
     ":releases.bzl",
     "wkg_releases",
 )
+load(
+    ":host.bzl",
+    "host_arch",
+    "host_os",
+)
+
+_WKG_OS_MAP = {
+    "linux": "unknown-linux-gnu",
+    "macos": "apple-darwin",
+    "windows": "pc-windows-gnu",
+}
 
 WkgReleaseInfo = provider(
+    # @unsorted-dict-items
     fields = {
-        "version": provider_field(typing.Any, default = None),
-        "url": provider_field(typing.Any, default = None),
-        "sha256": provider_field(typing.Any, default = None),
+        "version": provider_field(str),
+        "url": provider_field(str),
+        "sha256": provider_field(str),
     },
     doc = """WkgReleaseInfo: Metadata for a specific prebuilt `wkg` release asset.""",
 )
@@ -46,21 +58,21 @@ def _get_wkg_release(version: str, platform: str) -> WkgReleaseInfo:
     )
 
 WkgDistributionInfo = provider(
+    # @unsorted-dict-items
     fields = {
-        "version": provider_field(typing.Any, default = None),
-        "arch": provider_field(typing.Any, default = None),
-        "os": provider_field(typing.Any, default = None),
+        "version": provider_field(str),
+        "arch": provider_field(str),
+        "os": provider_field(str),
     },
     doc = """WkgDistributionInfo: Toolchain provider exposing the `wkg` binary distribution metadata.""",
 )
 
 def _wkg_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
-    # Create a stable symlink named "wkg" that points to the downloaded file
+    # Create a copy of the wkg binary
     dst = ctx.actions.declare_output("wkg")
-    src = cmd_args(ctx.attrs.dist[DefaultInfo].default_outputs[0], format = "{}")
 
     ctx.actions.run(
-        ["ln", "-sf", cmd_args(src, relative_to = (dst, 1)), dst.as_output()],
+        ["cp", ctx.attrs.dist[DefaultInfo].default_outputs[0], dst.as_output()],
         category = "cp_wkg",
     )
 
@@ -89,26 +101,6 @@ wkg_distribution = rule(
     },
 )
 
-def _host_arch() -> str:
-    arch = host_info().arch
-    if arch.is_x86_64:
-        return "x86_64"
-    elif host_info().arch.is_aarch64:
-        return "aarch64"
-    else:
-        fail("Unsupported host architecture.")
-
-def _host_os() -> str:
-    os = host_info().os
-    if os.is_linux:
-        return "unknown-linux-gnu"
-    elif os.is_macos:
-        return "apple-darwin"
-    elif os.is_windows:
-        return "pc-windows-gnu"
-    else:
-        fail("Unsupported host os.")
-
 def download_wkg(name: str, version: str, arch: [None, str] = None, os: [None, str] = None):
     """
     Download and register a prebuilt `wkg` CLI release as a local distribution and
@@ -116,9 +108,9 @@ def download_wkg(name: str, version: str, arch: [None, str] = None, os: [None, s
     """
 
     if arch == None:
-        arch = _host_arch()
+        arch = host_arch()
     if os == None:
-        os = _host_os()
+        os = host_os(_WKG_OS_MAP)
 
     release = _get_wkg_release(version, "{}-{}".format(arch, os))
 
@@ -139,13 +131,14 @@ def download_wkg(name: str, version: str, arch: [None, str] = None, os: [None, s
     )
 
 WkgInfo = provider(
+    # @unsorted-dict-items
     fields = {
-        "wkg": provider_field(typing.Any, default = None),
-        "config": provider_field(typing.Any, default = None),
-        "get": provider_field(typing.Any, default = None),
-        "publish": provider_field(typing.Any, default = None),
-        "oci": provider_field(typing.Any, default = None),
-        "wit": provider_field(typing.Any, default = None),
+        "wkg": provider_field(RunInfo),
+        "config": provider_field(RunInfo),
+        "get": provider_field(RunInfo),
+        "publish": provider_field(RunInfo),
+        "oci": provider_field(RunInfo),
+        "wit": provider_field(RunInfo),
     },
     doc = "Toolchain info provider for wkg"
 )
