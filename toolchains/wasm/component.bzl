@@ -77,13 +77,13 @@ load(
     "merge_shared_libraries",
 )
 
-load("//wasm:bindgen.bzl", "WitBindgenInfo")
-load("//wasm:binaryen.bzl", "BinaryenInfo")
-load("//wasm:jco.bzl", "JcoInfo")
-load("//wasm:tools.bzl", "WasmToolsInfo")
-load("//wasm:transition.bzl", "wasm_transition")
-load("//wasm:wac.bzl", "WacInfo")
-load("//wasm:wkg.bzl", "WkgInfo")
+load(":bindgen.bzl", "WitBindgenInfo")
+load(":binaryen.bzl", "BinaryenInfo")
+load(":jco.bzl", "JcoInfo")
+load(":tools.bzl", "WasmToolsInfo")
+load(":transition.bzl", "wasm_transition")
+load(":wac.bzl", "WacInfo")
+load(":wkg.bzl", "WkgInfo")
 
 # ============================================================================
 # PROVIDERS AND COMMON UTILITIES
