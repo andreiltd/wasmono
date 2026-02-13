@@ -1,4 +1,4 @@
-load("@toolchains//wasm:component.bzl", "wit_bindgen_cxx", "wasm_component", "wasm_plug")
+load("@toolchains//wasm:component.bzl", "wit_bindgen_cxx", "wasm_component", "wasm_opt", "wasm_plug")
 
 # Generate C++ bindings
 wit_bindgen_cxx(
@@ -16,10 +16,17 @@ cxx_binary(
     _cxx_toolchain = "toolchains//:cxx_wasi",
 )
 
+# Optimize the WASM module before componentization
+wasm_opt(
+    name = "validator_opt",
+    input = ":validator",
+    optimization = "os",
+)
+
 # Create the WASM component
 wasm_component(
     name = "validator_component",
-    module = ":validator",
+    module = ":validator_opt",
     wit = "wit/validator.wit",
 )
 

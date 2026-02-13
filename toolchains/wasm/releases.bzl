@@ -100,6 +100,31 @@ wkg_releases = {
     },
 }
 
+binaryen_releases = {
+    "125": {
+        "aarch64-linux": {
+            "shasum": "d0382de3c189a7cbb9fdda93e2966f4557f6a00f201e2c4937c27ca01cead4fc",
+            "url": "https://github.com/WebAssembly/binaryen/releases/download/version_125/binaryen-version_125-aarch64-linux.tar.gz",
+        },
+        "arm64-macos": {
+            "shasum": "28bab047c4ce845c5c1da111222ffee5fafcec0bbedd046ad8b3dcae0fd57076",
+            "url": "https://github.com/WebAssembly/binaryen/releases/download/version_125/binaryen-version_125-arm64-macos.tar.gz",
+        },
+        "x86_64-linux": {
+            "shasum": "7c3bc16599c8274a04d34a504fe4be2047884f900e0e2da2f6fb9cd667183be4",
+            "url": "https://github.com/WebAssembly/binaryen/releases/download/version_125/binaryen-version_125-x86_64-linux.tar.gz",
+        },
+        "x86_64-macos": {
+            "shasum": "72a98df1bfb81dd1e241d2b022e15c72edbd49e29d84abc6a1129c7d083072dd",
+            "url": "https://github.com/WebAssembly/binaryen/releases/download/version_125/binaryen-version_125-x86_64-macos.tar.gz",
+        },
+        "x86_64-windows": {
+            "shasum": "7d20f9f22ee1d1a195aecccb21390f8c599b5025219520c7c9f04673b39d2c20",
+            "url": "https://github.com/WebAssembly/binaryen/releases/download/version_125/binaryen-version_125-x86_64-windows.tar.gz",
+        },
+    },
+}
+
 wasi_adapters = {
     "v37.0.0": {
         "reactor": {

@@ -78,6 +78,7 @@ load(
 )
 
 load("//wasm:bindgen.bzl", "WitBindgenInfo")
+load("//wasm:binaryen.bzl", "BinaryenInfo")
 load("//wasm:jco.bzl", "JcoInfo")
 load("//wasm:tools.bzl", "WasmToolsInfo")
 load("//wasm:transition.bzl", "wasm_transition")
@@ -884,6 +885,77 @@ wasm_package = rule(
         ),
     },
     doc = "Downloads a Wasm package from a registry",
+)
+
+# ============================================================================
+# WASM OPT (optimize WASM modules/components using Binaryen)
+# ============================================================================
+
+def _wasm_opt_impl(ctx: AnalysisContext) -> list[Provider]:
+    """Optimize a WASM module or component using wasm-opt."""
+    binaryen_info = ctx.attrs._binaryen_toolchain[BinaryenInfo]
+
+    input_file = ctx.attrs.input[DefaultInfo].default_outputs[0]
+    output_file = ctx.actions.declare_output("{}.opt.wasm".format(ctx.label.name))
+
+    cmd = cmd_args(binaryen_info.wasm_opt)
+    cmd.add(input_file)
+
+    cmd.add("-o")
+    cmd.add(output_file.as_output())
+
+    _OPT_LEVELS = {
+        "o": "-O",
+        "o1": "-O1",
+        "o2": "-O2",
+        "o3": "-O3",
+        "o4": "-O4",
+        "os": "-Os",
+        "oz": "-Oz",
+    }
+
+    cmd.add(_OPT_LEVELS[ctx.attrs.optimization])
+
+    for flag in ctx.attrs.extra_flags:
+        cmd.add(flag)
+
+    ctx.actions.run(cmd, category = "wasm_opt")
+
+    # Pass through WasmInfo from the input if present
+    providers = [DefaultInfo(default_output = output_file)]
+    if WasmInfo in ctx.attrs.input:
+        wasm_info = ctx.attrs.input[WasmInfo]
+        providers.append(WasmInfo(
+            module = output_file if wasm_info.module else None,
+            component = output_file if wasm_info.component else None,
+            wit = wasm_info.wit,
+        ))
+
+    return providers
+
+wasm_opt = rule(
+    impl = _wasm_opt_impl,
+    attrs = {
+        "input": attrs.dep(
+            providers = [DefaultInfo],
+            doc = "WASM module or component to optimize",
+        ),
+        "optimization": attrs.enum(
+            ["o", "o1", "o2", "o3", "o4", "os", "oz"],
+            default = "o",
+            doc = "Optimization level (o, o1, o2, o3, o4, os, oz)",
+        ),
+        "extra_flags": attrs.list(
+            attrs.string(),
+            default = [],
+            doc = "Additional flags to pass to wasm-opt",
+        ),
+        "_binaryen_toolchain": attrs.toolchain_dep(
+            default = "toolchains//:binaryen",
+            providers = [BinaryenInfo],
+        ),
+    },
+    doc = "Optimizes a WASM module or component using Binaryen's wasm-opt",
 )
 
 # ============================================================================
