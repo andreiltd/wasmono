@@ -6,6 +6,8 @@ Buck2 rules for building WebAssembly components.
 [external cell](https://buck2.build/docs/users/advanced/external_cells/). Currently, this is a collection 
 of experiments and patterns for WASM component development with Buck2.
 
+See also similar rules for bazel: https://github.com/pulseengine/rules_wasm_component
+
 ## Quick Start
 
 ```bash
@@ -27,22 +29,27 @@ buck2 run //examples/validator/runner:validator -- "Hello#World"
 
 ## Using as an External Cell
 
-Wasmono can be used as an [external cell](https://buck2.build/docs/users/advanced/external_cells/) in other Buck2 projects. Add it as a git submodule or clone it alongside your project, then reference it in your `.buckconfig`:
+Wasmono can be used as a [git external cell](https://buck2.build/docs/users/advanced/external_cells/#the-git-origin) in other Buck2 projects. Add the following to your `.buckconfig`:
 
 ```ini
 [cells]
   root = .
-  toolchains = path/to/wasmono/toolchains
-  prelude = path/to/wasmono/prelude
-  # ... or wherever your prelude lives
+  wasmono = wasmono
+  toolchains = wasmono/toolchains
+  prelude = prelude
 
 [external_cells]
   prelude = bundled
+  wasmono = git
 
-[cell_aliases]
-  # If wasmono lives in a subdirectory
-  toolchains = path/to/wasmono/toolchains
+[external_cell_wasmono]
+  git_origin = https://github.com/<org>/wasmono.git
+  commit_hash = <sha1>
 ```
+
+> **Note**: The `toolchains = wasmono/toolchains` cell mapping is required because
+> the built-in rules reference toolchain targets as `toolchains//:wasm_tools`, etc.
+> Replace `git_origin` and `commit_hash` with the actual repository URL and commit SHA.
 
 Then use the rules in your BUCK files:
 

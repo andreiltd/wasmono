@@ -1,6 +1,28 @@
 """A collection of release metadata for various Bytecode Alliance tools."""
 
 wasm_tools_releases = {
+    "1.245.1": {
+        "aarch64-linux": {
+            "shasum": "e01ef74b8e7b4a819d91122fdd87084fb25a938e4bfa4179cc5524b961468c85",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.245.1/wasm-tools-1.245.1-aarch64-linux.tar.gz",
+        },
+        "aarch64-macos": {
+            "shasum": "d69043b13f8ad4bc07c993e9630e795a7f2c2af488e5688d15044a1448dfa139",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.245.1/wasm-tools-1.245.1-aarch64-macos.tar.gz",
+        },
+        "x86_64-linux": {
+            "shasum": "b171e20fd107e63e89ef6c936b5581597666a086af677d7818de92b7cdd5a86d",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.245.1/wasm-tools-1.245.1-x86_64-linux.tar.gz",
+        },
+        "x86_64-macos": {
+            "shasum": "dd718c5c9c6044f97e2d6ee076e91f6e448c8a3b31d3c5397b16f03c461857b7",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.245.1/wasm-tools-1.245.1-x86_64-macos.tar.gz",
+        },
+        "x86_64-windows": {
+            "shasum": "3d7896b11b419b64a5f1cf81cef92a8da3371babc620eaf75fba4bca4670a75b",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.245.1/wasm-tools-1.245.1-x86_64-windows.zip",
+        },
+    },
     "1.244.0": {
         "aarch64-linux": {
             "shasum": "3c1ed0cc86186b98f45aad0dd406cbd10e4356686fa4ed81e63463e55bcb9052",
@@ -48,6 +70,28 @@ wasm_tools_releases = {
 }
 
 wit_bindgen_releases = {
+    "0.53.0": {
+        "aarch64-linux": {
+            "shasum": "5a3dfa4a8e26a01e29bbaae71da76f7cdc21c058eec7b514be93e33726e48733",
+            "url": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.53.0/wit-bindgen-0.53.0-aarch64-linux.tar.gz",
+        },
+        "aarch64-macos": {
+            "shasum": "85b20464794fcd5f96116f1a5b0df4559d13aab462724b12c11519b298bc7573",
+            "url": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.53.0/wit-bindgen-0.53.0-aarch64-macos.tar.gz",
+        },
+        "x86_64-linux": {
+            "shasum": "3be496d6cb0f49a4b20b9e0b5e53f3284958805308eac8975e2ce3e4666314e6",
+            "url": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.53.0/wit-bindgen-0.53.0-x86_64-linux.tar.gz",
+        },
+        "x86_64-macos": {
+            "shasum": "7efe8ad4a84cef5623e40a7d13fc3a103dcbb74c5bb4cbfb1762f40677b25679",
+            "url": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.53.0/wit-bindgen-0.53.0-x86_64-macos.tar.gz",
+        },
+        "x86_64-windows": {
+            "shasum": "397c26dfc60651115639763d8631cf96be71fff7fe5e0734218ff846e4d2b62c",
+            "url": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.53.0/wit-bindgen-0.53.0-x86_64-windows.zip",
+        },
+    },
     "0.51.0": {
         "aarch64-linux": {
             "shasum": "d3c65f0d246b56f333713b3efed3727ea2fdc15d17e8cb488ad4bad30460dee8",
@@ -142,6 +186,28 @@ wac_releases = {
 }
 
 wkg_releases = {
+    "0.15.0": {
+        "aarch64-apple-darwin": {
+            "shasum": "a9fff923a072d44a0b1f283af19cc5f99672f1382f24c6e534cdf44037b963e5",
+            "url": "https://github.com/bytecodealliance/wasm-pkg-tools/releases/download/v0.15.0/wkg-aarch64-apple-darwin",
+        },
+        "aarch64-unknown-linux-gnu": {
+            "shasum": "0015de3abdcf1758e46fb184ab76a578d317f79b76fbd802cc18e939d5b85a8a",
+            "url": "https://github.com/bytecodealliance/wasm-pkg-tools/releases/download/v0.15.0/wkg-aarch64-unknown-linux-gnu",
+        },
+        "x86_64-apple-darwin": {
+            "shasum": "b7f9c2317cd5216cb1675b91585e1a8271445c3199db602a6adf9533dd4a3be8",
+            "url": "https://github.com/bytecodealliance/wasm-pkg-tools/releases/download/v0.15.0/wkg-x86_64-apple-darwin",
+        },
+        "x86_64-pc-windows-gnu": {
+            "shasum": "7d933c5cad3dbac162a7dc7a1c233f53081bfd1ee2be5abc72fe8b43e6159907",
+            "url": "https://github.com/bytecodealliance/wasm-pkg-tools/releases/download/v0.15.0/wkg-x86_64-pc-windows-gnu",
+        },
+        "x86_64-unknown-linux-gnu": {
+            "shasum": "f685555024b87e34842dd7c76ad92b1bd0f306671115fb4b13b79c5a8fe0e6bd",
+            "url": "https://github.com/bytecodealliance/wasm-pkg-tools/releases/download/v0.15.0/wkg-x86_64-unknown-linux-gnu",
+        },
+    },
     "0.13.0": {
         "aarch64-apple-darwin": {
             "shasum": "e8abc8195201fab2769a79ca3f831c3a7830714cd9508c3d1defff348942cbc6",
