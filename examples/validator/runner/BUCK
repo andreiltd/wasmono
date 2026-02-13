@@ -8,7 +8,7 @@ rust_binary(
         "//third-party:wasmtime-wasi",
     ],
     env = {
-        "COMPONENT_PATH": "$(location //components/validator:validator_with_regex)",
+        "COMPONENT_PATH": "$(location //examples/validator/validator:validator_with_regex)",
     },
     visibility = ["PUBLIC"],
 )

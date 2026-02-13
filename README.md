@@ -12,23 +12,50 @@ of experiments and patterns for WASM component development with Buck2.
 cargo +nightly-2025-06-20 install --git https://github.com/facebook/buck2.git buck2
 
 # Run the example validator
-buck2 run //runner:validator -- "Hello World"
-buck2 run //runner:validator -- "Hello#World"
+buck2 run //examples/validator/runner:validator -- "Hello World"
+buck2 run //examples/validator/runner:validator -- "Hello#World"
 ```
 
 ## Features
 
 - **Component Building**: Create WASM components from Rust, C, and C++
 - **WIT Bindings**: Generate language bindings from WIT definitions
-- **Composition**: Link and plug components together
+- **Composition**: Link, plug, and compose components together (via WAC)
 - **Package Management**: Fetch components from WASM registries
+- **Optimization**: Run wasm-opt (Binaryen) on modules
+- **JavaScript Components**: Build components from JavaScript (via jco)
+
+## Using as an External Cell
+
+Wasmono can be used as an [external cell](https://buck2.build/docs/users/advanced/external_cells/) in other Buck2 projects. Add it as a git submodule or clone it alongside your project, then reference it in your `.buckconfig`:
+
+```ini
+[cells]
+  root = .
+  toolchains = path/to/wasmono/toolchains
+  prelude = path/to/wasmono/prelude
+  # ... or wherever your prelude lives
+
+[external_cells]
+  prelude = bundled
+
+[cell_aliases]
+  # If wasmono lives in a subdirectory
+  toolchains = path/to/wasmono/toolchains
+```
+
+Then use the rules in your BUCK files:
+
+```python
+load("@toolchains//wasm:component.bzl", "wasm_component", "wasm_compose")
+```
 
 ## Build a Component
 
 ```python
 load("@toolchains//wasm:component.bzl", "wasm_component")
 
-# Build the C++ binary with WASM target using wasi-sdk
+# Build the Rust binary with WASM target
 rust_binary(
     name = "regex",
     crate = "regex",
@@ -48,18 +75,19 @@ wasm_component(
     wit = "wit/regex.wit",
     visibility = ['PUBLIC'],
 )
-
 ```
 
 ## Available Rules
 
 ### Component Rules
 
-- `wasm_component` - Create component from WASM module
+- `wasm_component` - Create component from WASM module + WIT
 - `wasm_component_link` - Link multiple components
-- `wasm_plug` - Compose components using wac
+- `wasm_plug` - Compose components using plug pattern
+- `wasm_compose` - Compose components using WAC composition files
 - `wasm_validate` - Validate WASM binaries
 - `wasm_print` - Convert WASM to text format
+- `wasm_opt` - Optimize WASM modules with Binaryen
 
 ### Binding Generation
 
@@ -67,6 +95,10 @@ wasm_component(
 - `wit_bindgen_c` - Generate C bindings
 - `wit_bindgen_cxx` - Generate C++ bindings
 - `wit_to_markdown` - Generate documentation
+
+### JavaScript
+
+- `wasm_componentize_js` - Build component from JavaScript (via jco)
 
 ### Package Management
 
@@ -147,3 +179,5 @@ Available toolchains:
 - **wac** - Component composition (https://github.com/bytecodealliance/wac)
 - **wkg** - Package management (https://github.com/bytecodealliance/wasm-pkg-tools)
 - **wasi-sdk** - C/C++ wasi toolchain (https://github.com/WebAssembly/wasi-sdk)
+- **binaryen** - WASM optimizer / wasm-opt (https://github.com/WebAssembly/binaryen)
+- **jco** - JavaScript component toolchain (system install, https://github.com/bytecodealliance/jco)

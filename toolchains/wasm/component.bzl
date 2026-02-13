@@ -134,7 +134,7 @@ def _wasm_modules_from_deps(deps):
             if getattr(wi, "module", None):
                 # module is a single artifact
                 results.append(wi.module)
-                continue
+            continue
 
         if DefaultInfo in dep:
             for out in dep[DefaultInfo].default_outputs:
@@ -151,7 +151,7 @@ def _components_from_deps(deps):
             info = dep[WasmInfo]
             if getattr(info, "component", None):
                 results.append(info.component)
-                continue
+            continue
 
         if DefaultInfo in dep:
             for out in dep[DefaultInfo].default_outputs:
@@ -236,6 +236,9 @@ def _wasm_component_impl(ctx: AnalysisContext) -> list[Provider]:
         "-o", output_file.as_output(),
     )
 
+    if ctx.attrs.skip_validation:
+        cmd.add("--skip-validation")
+
     ctx.actions.run(cmd, category = "wasm_component_new")
 
     return [
@@ -258,6 +261,10 @@ wasm_component = rule(
             attrs.source(),
             default = None,
             doc = "Optional single WIT file, directory, or .wasm WIT package to embed",
+        ),
+        "skip_validation": attrs.bool(
+            default = False,
+            doc = "Skip validation of the component (needed for WASI P3 async exports)",
         ),
         "_wasm_tools_toolchain": attrs.toolchain_dep(
             default = "toolchains//:wasm_tools",
@@ -956,6 +963,65 @@ wasm_opt = rule(
         ),
     },
     doc = "Optimizes a WASM module or component using Binaryen's wasm-opt",
+)
+
+# ============================================================================
+# WASM COMPOSE (compose components using WAC language files)
+# ============================================================================
+
+def _wasm_compose_impl(ctx: AnalysisContext) -> list[Provider]:
+    """Compose WASM components using a WAC composition file."""
+    wac_info = ctx.attrs._wac_toolchain[WacInfo]
+
+    output_name = ctx.attrs.output if ctx.attrs.output else "{}.composed.wasm".format(ctx.label.name)
+    output_file = ctx.actions.declare_output(output_name)
+
+    cmd = cmd_args(wac_info.compose)
+    cmd.add(ctx.attrs.wac_file)
+
+    # Add --dep name=artifact mappings
+    for name, dep in ctx.attrs.deps.items():
+        comp = _resolve_single_from_deps([dep], _components_from_deps, "compose dep '{}'".format(name))
+        cmd.add("--dep")
+        cmd.add(cmd_args(name, "=", comp, delimiter = ""))
+
+    cmd.add("--output")
+    cmd.add(output_file.as_output())
+
+    ctx.actions.run(cmd, category = "wasm_compose")
+
+    return [
+        DefaultInfo(default_output = output_file),
+        WasmInfo(
+            module = None,
+            component = output_file,
+            wit = [],
+        ),
+    ]
+
+wasm_compose = rule(
+    impl = _wasm_compose_impl,
+    attrs = {
+        "wac_file": attrs.source(
+            doc = "WAC composition file (.wac) describing the component graph",
+        ),
+        "deps": attrs.dict(
+            key = attrs.string(),
+            value = attrs.transition_dep(cfg = wasm_transition),
+            default = {},
+            doc = "Map of WAC dependency names to Buck2 targets (e.g. {'my:service': '//svc:component'})",
+        ),
+        "output": attrs.option(
+            attrs.string(),
+            default = None,
+            doc = "Optional output filename. Defaults to '<name>.composed.wasm'.",
+        ),
+        "_wac_toolchain": attrs.toolchain_dep(
+            default = "toolchains//:wac",
+            providers = [WacInfo],
+        ),
+    },
+    doc = "Composes WASM components using a WAC composition file and 'wac compose'",
 )
 
 # ============================================================================
