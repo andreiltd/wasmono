@@ -29,32 +29,105 @@ buck2 run //examples/validator/runner:validator -- "Hello#World"
 
 ## Using as an External Cell
 
-Wasmono can be used as a [git external cell](https://buck2.build/docs/users/advanced/external_cells/#the-git-origin) in other Buck2 projects. Add the following to your `.buckconfig`:
+Wasmono can be used as a [git external cell](https://buck2.build/docs/users/advanced/external_cells/#the-git-origin) in other Buck2 projects.
+
+### 1. Configure `.buckconfig`
 
 ```ini
 [cells]
   root = .
   wasmono = wasmono
-  toolchains = wasmono/toolchains
+  toolchains = toolchains
   prelude = prelude
+  none = none
+
+[cell_aliases]
+  config = prelude
+  ovr_config = prelude
+  fbcode = none
+  fbsource = none
+  fbcode_macros = none
+  buck = none
 
 [external_cells]
   prelude = bundled
   wasmono = git
 
 [external_cell_wasmono]
-  git_origin = https://github.com/<org>/wasmono.git
+  git_origin = https://github.com/andreiltd/wasmono.git
   commit_hash = <sha1>
+
+[build]
+  execution_platforms = prelude//platforms:default
+
+[parser]
+  target_platform_detector_spec = target:root//...->prelude//platforms:default
 ```
 
-> **Note**: The `toolchains = wasmono/toolchains` cell mapping is required because
-> the built-in rules reference toolchain targets as `toolchains//:wasm_tools`, etc.
-> Replace `git_origin` and `commit_hash` with the actual repository URL and commit SHA.
+Create an empty `none/BUCK` file (required by cell aliases).
 
-Then use the rules in your BUCK files:
+### 2. Set up `toolchains/BUCK`
+
+The wasmono rules reference `toolchains//:wasm_tools`, `toolchains//:wit_bindgen`, etc.
+You must define these targets in your own `toolchains/BUCK`. The `wasm_demo_toolchains()`
+macro creates all WASM toolchain targets with sensible defaults:
 
 ```python
-load("@toolchains//wasm:component.bzl", "wasm_component", "wasm_compose")
+load("@prelude//toolchains:cxx.bzl", "system_cxx_toolchain")
+load("@prelude//toolchains:genrule.bzl", "system_genrule_toolchain")
+load("@prelude//toolchains:python.bzl", "system_python_bootstrap_toolchain")
+load("@prelude//toolchains:rust.bzl", "system_rust_toolchain")
+load("@wasmono//toolchains/wasm:demo.bzl", "wasm_demo_toolchains")
+load("@wasmono//toolchains/cxx/wasi:defs.bzl", "download_wasi_sdk", "cxx_wasi_toolchain")
+
+_DEFAULT_TRIPLE = select({
+    "config//os:wasi": select({
+        "config//cpu:wasm32": "wasm32-wasip2",
+    }),
+    "config//os:linux": select({
+        "config//cpu:arm64": "aarch64-unknown-linux-gnu",
+        "config//cpu:x86_64": "x86_64-unknown-linux-gnu",
+    }),
+    "config//os:macos": select({
+        "config//cpu:arm64": "aarch64-apple-darwin",
+        "config//cpu:x86_64": "x86_64-apple-darwin",
+    }),
+})
+
+system_genrule_toolchain(name = "genrule", visibility = ["PUBLIC"])
+system_cxx_toolchain(name = "cxx", visibility = ["PUBLIC"])
+system_python_bootstrap_toolchain(name = "python_bootstrap", visibility = ["PUBLIC"])
+
+system_rust_toolchain(
+    name = "rust",
+    default_edition = "2024",
+    rustc_target_triple = _DEFAULT_TRIPLE,
+    visibility = ["PUBLIC"],
+)
+
+# WASM toolchains
+wasm_demo_toolchains()
+
+download_wasi_sdk(name = "wasi_sdk", version = "27.0")
+cxx_wasi_toolchain(name = "cxx_wasi", distribution = ":wasi_sdk", visibility = ["PUBLIC"])
+```
+
+### 3. Add `platforms/BUCK`
+
+```python
+platform(
+    name = "wasm32_wasi",
+    constraint_values = [
+        "config//cpu/constraints:wasm32",
+        "config//os/constraints:wasi",
+    ],
+)
+```
+
+### 4. Use the rules
+
+```python
+load("@wasmono//toolchains/wasm:component.bzl", "wasm_component", "wasm_compose")
 ```
 
 ## Build a Component
