@@ -279,6 +279,27 @@ binaryen_releases = {
     },
 }
 
+wasmtime_releases = {
+    "41.0.3": {
+        "aarch64-linux": {
+            "shasum": "1dd1f69089eeefc3826f38463f8375d6ff2e59684a2a85b44a6622516d0a5677",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v41.0.3/wasmtime-v41.0.3-aarch64-linux.tar.xz",
+        },
+        "aarch64-macos": {
+            "shasum": "f1db748d63bea4df0181d0170c232e1f423caf5ff816495f0153eb2cf6d57a1d",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v41.0.3/wasmtime-v41.0.3-aarch64-macos.tar.xz",
+        },
+        "x86_64-linux": {
+            "shasum": "797d0a4f790e79c33ccaf43bfe413f077fff951e3a35145afe7b5a8324f14644",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v41.0.3/wasmtime-v41.0.3-x86_64-linux.tar.xz",
+        },
+        "x86_64-macos": {
+            "shasum": "56bd7c79e6f2edb8f79c49de202955d60ad5a27231cc9c1689e593d07304d368",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v41.0.3/wasmtime-v41.0.3-x86_64-macos.tar.xz",
+        },
+    },
+}
+
 wasi_adapters = {
     "v41.0.3": {
         "reactor": {

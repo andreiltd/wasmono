@@ -25,7 +25,7 @@ cxx_wasi_toolchain(name = "cxx_wasi", distribution = ":wasi_sdk", visibility = [
 ```
 
 This creates all the WASM-related toolchain targets that wasmono rules expect:
-`wasm_tools`, `wit_bindgen`, `wac`, `wkg`, `jco`, and `binaryen`.
+`wasm_tools`, `wit_bindgen`, `wac`, `wkg`, `jco`, `binaryen`, and `wasmtime`.
 The `cxx_wasi` toolchain must be added separately (shown above) because it
 lives in a different package.
 """
@@ -35,6 +35,7 @@ load(":bindgen.bzl", "download_wit_bindgen", "wit_bindgen_toolchain")
 load(":jco.bzl", "system_jco_toolchain")
 load(":tools.bzl", "download_wasm_tools", "wasm_tools_toolchain")
 load(":wac.bzl", "download_wac", "wac_toolchain")
+load(":wasmtime.bzl", "download_wasmtime", "wasmtime_toolchain")
 load(":wkg.bzl", "download_wkg", "wkg_toolchain")
 
 def wasm_demo_toolchains(
@@ -42,7 +43,8 @@ def wasm_demo_toolchains(
         wit_bindgen_version = "0.53.0",
         wac_version = "0.9.0",
         wkg_version = "0.15.0",
-        binaryen_version = "125"):
+        binaryen_version = "125",
+        wasmtime_version = "41.0.3"):
     """Create WASM toolchain targets with sensible defaults.
 
     Note: `cxx_wasi` must be added separately — see module docstring.
@@ -53,6 +55,7 @@ def wasm_demo_toolchains(
         wac_version: Version of WAC to download.
         wkg_version: Version of wkg to download.
         binaryen_version: Version of Binaryen to download.
+        wasmtime_version: Version of Wasmtime CLI to download.
     """
     download_wasm_tools(name = "wasm_tools_dist", version = wasm_tools_version)
     wasm_tools_toolchain(name = "wasm_tools", distribution = ":wasm_tools_dist", visibility = ["PUBLIC"])
@@ -70,3 +73,6 @@ def wasm_demo_toolchains(
 
     download_binaryen(name = "binaryen_dist", version = binaryen_version)
     binaryen_toolchain(name = "binaryen", distribution = ":binaryen_dist", visibility = ["PUBLIC"])
+
+    download_wasmtime(name = "wasmtime_dist", version = wasmtime_version)
+    wasmtime_toolchain(name = "wasmtime", distribution = ":wasmtime_dist", visibility = ["PUBLIC"])

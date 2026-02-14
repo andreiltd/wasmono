@@ -9,6 +9,10 @@ This module provides comprehensive WASM component tooling:
 - wasm_validate: Validate WASM modules/components
 - wasm_print: Convert WASM to text format
 
+## WASM Execution Rules (using wasmtime CLI):
+- wasm_run: Run a WASM component and capture output
+- wasm_test: Test a WASM component (exit code = pass/fail)
+
 ## WIT Binding Generation Rules (using wit-bindgen):
 - wit_bindgen_rust: Generate Rust bindings from WIT
 - wit_bindgen_c: Generate C bindings from WIT
@@ -83,6 +87,7 @@ load(":jco.bzl", "JcoInfo")
 load(":tools.bzl", "WasmToolsInfo")
 load(":transition.bzl", "wasm_transition")
 load(":wac.bzl", "WacInfo")
+load(":wasmtime.bzl", "WasmtimeInfo")
 load(":wkg.bzl", "WkgInfo")
 
 # ============================================================================
@@ -1089,4 +1094,114 @@ wasm_componentize_js = rule(
         ),
     },
     doc = "Creates a WASM Component from JavaScript source using 'jco componentize'",
+)
+
+# ============================================================================
+# WASM RUN / TEST RULES (using wasmtime CLI)
+# ============================================================================
+
+def _resolve_component_from_deps(deps):
+    """Extract a single component or module .wasm from deps for execution."""
+    components = _components_from_deps(deps)
+    if len(components) == 1:
+        return components[0]
+    modules = _wasm_modules_from_deps(deps)
+    all_wasm = components + modules
+    if len(all_wasm) == 0:
+        labels = [str(d.label) for d in deps]
+        fail("wasm_run: no .wasm or .component.wasm found in deps {}".format(labels))
+    if len(all_wasm) > 1:
+        names = [a.basename for a in all_wasm]
+        fail("wasm_run: found multiple wasm files: {}. Expected exactly one.".format(names))
+    return all_wasm[0]
+
+def _build_wasmtime_cmd(wasmtime_info, component_file, attrs):
+    """Build a wasmtime run command from common attributes."""
+    cmd = cmd_args(wasmtime_info.run)
+
+    if attrs.wasi_inherit_env:
+        cmd.add("--inherit-env")
+    if attrs.wasi_inherit_network:
+        cmd.add("--wasi", "inherit-network")
+    for dir in attrs.wasi_dirs:
+        cmd.add("--dir", dir)
+
+    cmd.add(component_file)
+
+    for arg in attrs.args:
+        cmd.add(arg)
+
+    return cmd
+
+_WASMTIME_COMMON_ATTRS = {
+    "args": attrs.list(
+        attrs.string(),
+        default = [],
+        doc = "Arguments to pass to the WASM component",
+    ),
+    "wasi_inherit_env": attrs.bool(
+        default = False,
+        doc = "Inherit host environment variables in the WASI context",
+    ),
+    "wasi_inherit_network": attrs.bool(
+        default = False,
+        doc = "Allow WASI network access",
+    ),
+    "wasi_dirs": attrs.list(
+        attrs.string(),
+        default = [],
+        doc = "Directories to make available to the WASI filesystem (e.g. '.::/data')",
+    ),
+    "_wasmtime_toolchain": attrs.toolchain_dep(
+        default = "toolchains//:wasmtime",
+        providers = [WasmtimeInfo],
+    ),
+}
+
+def _wasm_run_impl(ctx: AnalysisContext) -> list[Provider]:
+    """Run a WASM component using wasmtime CLI and capture output."""
+    component_file = _resolve_component_from_deps([ctx.attrs.component])
+    wasmtime_info = ctx.attrs._wasmtime_toolchain[WasmtimeInfo]
+
+    cmd = _build_wasmtime_cmd(wasmtime_info, component_file, ctx.attrs)
+
+    return [
+        DefaultInfo(default_output = component_file),
+        RunInfo(args = cmd),
+    ]
+
+wasm_run = rule(
+    impl = _wasm_run_impl,
+    attrs = dict({
+        "component": attrs.dep(
+            doc = "Component or module to run (dep producing .wasm or .component.wasm)",
+        ),
+    }, **_WASMTIME_COMMON_ATTRS),
+    doc = "Runs a WASM component using 'wasmtime run'. Use with 'buck2 run'.",
+)
+
+def _wasm_test_impl(ctx: AnalysisContext) -> list[Provider]:
+    """Test a WASM component by running it via wasmtime and checking exit code."""
+    component_file = _resolve_component_from_deps([ctx.attrs.component])
+    wasmtime_info = ctx.attrs._wasmtime_toolchain[WasmtimeInfo]
+
+    cmd = _build_wasmtime_cmd(wasmtime_info, component_file, ctx.attrs)
+
+    return [
+        DefaultInfo(default_output = component_file),
+        RunInfo(args = cmd),
+        ExternalRunnerTestInfo(
+            type = "custom",
+            command = [cmd],
+        ),
+    ]
+
+wasm_test = rule(
+    impl = _wasm_test_impl,
+    attrs = dict({
+        "component": attrs.dep(
+            doc = "Component or module to test (dep producing .wasm or .component.wasm)",
+        ),
+    }, **_WASMTIME_COMMON_ATTRS),
+    doc = "Tests a WASM component by running it with 'wasmtime run' and checking exit code. Use with 'buck2 test'.",
 )
