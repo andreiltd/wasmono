@@ -1,0 +1,21 @@
+load("@toolchains//wasm:component.bzl", "wasm_component", "wasm_run")
+
+rust_binary(
+    name = "hello",
+    crate = "hello",
+    crate_root = "src/lib.rs",
+    srcs = ["src/lib.rs"],
+    deps = [],
+    _cxx_toolchain = "toolchains//:rust_linker",
+)
+
+wasm_component(
+    name = "hello_component",
+    module = ":hello",
+    adapter = "command",
+)
+
+wasm_run(
+    name = "run",
+    component = ":hello_component",
+)

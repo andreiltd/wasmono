@@ -1,0 +1,12 @@
+package example:composition;
+
+// Instantiate service_b (terminal service)
+let srv-b = new my:service-b { ... };
+
+// Instantiate service_a (forwarding service), wiring its handler import to service_b
+let srv = new my:service-a {
+    "wasi:http/handler@0.3.0-rc-2026-01-06": srv-b["wasi:http/handler@0.3.0-rc-2026-01-06"], ...
+};
+
+// Export the forwarding service's handler
+export srv["my:service/handler"] as "wasi:http/handler@0.3.0-rc-2026-01-06";

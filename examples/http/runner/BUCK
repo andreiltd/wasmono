@@ -1,0 +1,21 @@
+rust_binary(
+    name = "runner",
+    srcs = glob(["src/**/*.rs"]),
+    edition = "2024",
+    deps = [
+        "//third-party:anyhow",
+        "//third-party:bytes",
+        "//third-party:futures",
+        "//third-party:http",
+        "//third-party:http-body",
+        "//third-party:http-body-util",
+        "//third-party:tokio",
+        "//third-party:wasmtime",
+        "//third-party:wasmtime-wasi",
+        "//third-party:wasmtime-wasi-http",
+    ],
+    env = {
+        "COMPONENT_PATH": "$(location //examples/http/composition:composed_multiple)",
+    },
+    visibility = ["PUBLIC"],
+)

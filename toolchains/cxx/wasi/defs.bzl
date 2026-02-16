@@ -201,7 +201,7 @@ def _tool_path(dist_artifact, dist_info, tool_name):
 
 def _create_tool_script(ctx, dist_artifact, dist_info, name, tool_name):
     return cmd_script(
-        ctx = ctx,
+        actions = ctx.actions,
         name = name,
         cmd = cmd_args([_tool_path(dist_artifact, dist_info, tool_name)]),
         language = ScriptLanguage("bat" if dist_info.os == "windows" else "sh"),

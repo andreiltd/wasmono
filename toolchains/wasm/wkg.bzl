@@ -149,7 +149,7 @@ def _wkg_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
 
     def create_subcommand(name, subcommand):
         return cmd_script(
-            ctx = ctx,
+            actions = ctx.actions,
             name = name,
             cmd = cmd_args(wkg, subcommand),
             language = ScriptLanguage("bat" if dist.os == "pc-windows-gnu" else "sh"),

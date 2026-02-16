@@ -42,7 +42,7 @@ def wasm_demo_toolchains(
         wasm_tools_version = "1.245.1",
         wit_bindgen_version = "0.53.0",
         wac_version = "0.9.0",
-        wkg_version = "0.15.0",
+        wkg_version = "0.13.0",
         binaryen_version = "125",
         wasmtime_version = "41.0.3"):
     """Create WASM toolchain targets with sensible defaults.

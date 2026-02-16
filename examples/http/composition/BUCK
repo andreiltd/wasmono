@@ -1,0 +1,33 @@
+load("@toolchains//wasm:component.bzl", "wasm_compose")
+
+wasm_compose(
+    name = "composed_single",
+    wac_file = "single.wac",
+    deps = {
+        "my:service": "//examples/http/service:service_component",
+        "my:middleware": "//examples/http/middleware_a:middleware_a_component",
+    },
+    visibility = ["PUBLIC"],
+)
+
+wasm_compose(
+    name = "composed_multiple",
+    wac_file = "multiple.wac",
+    deps = {
+        "my:service": "//examples/http/service:service_component",
+        "my:middleware-a": "//examples/http/middleware_a:middleware_a_component",
+        "my:middleware-b": "//examples/http/middleware_b:middleware_b_component",
+        "my:middleware-c": "//examples/http/middleware_c:middleware_c_component",
+    },
+    visibility = ["PUBLIC"],
+)
+
+wasm_compose(
+    name = "composed_chained",
+    wac_file = "chained.wac",
+    deps = {
+        "my:service-b": "//examples/http/service:service_component",
+        "my:service-a": "//examples/http/service_fwd:service_fwd_component",
+    },
+    visibility = ["PUBLIC"],
+)

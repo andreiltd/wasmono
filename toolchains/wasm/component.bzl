@@ -233,7 +233,10 @@ def _wasm_component_impl(ctx: AnalysisContext) -> list[Provider]:
 
     # Build the component
     output_file = ctx.actions.declare_output("{}.component.wasm".format(ctx.label.name))
-    adapter_arg = cmd_args(wasm_tools_info.reactor_adapter, format = "wasi_snapshot_preview1={}")
+
+    # Select adapter based on component type
+    adapter = wasm_tools_info.command_adapter if ctx.attrs.adapter == "command" else wasm_tools_info.reactor_adapter
+    adapter_arg = cmd_args(adapter, format = "wasi_snapshot_preview1={}")
 
     cmd = cmd_args(
         wasm_tools_info.component, "new", module_file,
@@ -270,6 +273,11 @@ wasm_component = rule(
         "skip_validation": attrs.bool(
             default = False,
             doc = "Skip validation of the component (needed for WASI P3 async exports)",
+        ),
+        "adapter": attrs.enum(
+            ["reactor", "command"],
+            default = "reactor",
+            doc = "WASI adapter type: 'reactor' for library components, 'command' for CLI components with wasi:cli/run",
         ),
         "_wasm_tools_toolchain": attrs.toolchain_dep(
             default = "toolchains//:wasm_tools",
@@ -415,7 +423,7 @@ def _create_cxx_providers(ctx: AnalysisContext, outputs: dict, world: str, langu
 
     preprocessor_args = [incdir, std if language == "cpp" else []]
     preprocessor_info = cxx_merge_cpreprocessors(
-        ctx,
+        ctx.actions,
         [CPreprocessor(args = CPreprocessorArgs(args = preprocessor_args))],
         []
     )
@@ -897,6 +905,81 @@ wasm_package = rule(
         ),
     },
     doc = "Downloads a Wasm package from a registry",
+)
+
+# ============================================================================
+# WIT LIBRARY (using wkg wit fetch)
+# ============================================================================
+
+def _wit_library_impl(ctx: AnalysisContext) -> list[Provider]:
+    """
+    Define a WIT library with automatic dependency resolution.
+
+    Uses `wkg wit fetch` to resolve dependencies declared in the
+    WIT files and produce a self-contained output directory with
+    the original WIT files plus resolved deps.
+    """
+
+    wkg_info = ctx.attrs._wkg_toolchain[WkgInfo]
+
+    # Declare output directory to hold the WIT + resolved deps
+    output_dir = ctx.actions.declare_output(ctx.label.name, dir = True)
+
+    # Build a shell script that:
+    # 1. Copies source WIT files into the output directory
+    # 2. Runs wkg wit fetch to resolve dependencies
+    copy_parts = []
+    for src in ctx.attrs.wit:
+        copy_parts.append(cmd_args("cp", src, output_dir.as_output(), delimiter = " "))
+
+    fetch_cmd = cmd_args(wkg_info.wit, "fetch", "-d", output_dir.as_output(), delimiter = " ")
+    if ctx.attrs.config:
+        fetch_cmd.add("--config", ctx.attrs.config)
+    if ctx.attrs.cache:
+        fetch_cmd.add("--cache", ctx.attrs.cache)
+
+    script = cmd_args("/bin/sh", "-c")
+    all_parts = cmd_args(delimiter = " && ")
+    all_parts.add(cmd_args("mkdir", "-p", output_dir.as_output(), delimiter = " "))
+    for cp in copy_parts:
+        all_parts.add(cp)
+    all_parts.add(fetch_cmd)
+    script.add(all_parts)
+
+    ctx.actions.run(script, category = "wit_library")
+
+    return [
+        DefaultInfo(default_output = output_dir),
+        WasmInfo(
+            module = None,
+            component = None,
+            wit = [output_dir],
+        ),
+    ]
+
+wit_library = rule(
+    impl = _wit_library_impl,
+    attrs = {
+        "wit": attrs.list(
+            attrs.source(),
+            doc = "WIT source files whose dependencies should be resolved",
+        ),
+        "config": attrs.option(
+            attrs.source(),
+            default = None,
+            doc = "Path to wkg configuration file",
+        ),
+        "cache": attrs.option(
+            attrs.string(),
+            default = None,
+            doc = "Path to cache directory (overrides system default)",
+        ),
+        "_wkg_toolchain": attrs.toolchain_dep(
+            default = "toolchains//:wkg",
+            providers = [WkgInfo],
+        ),
+    },
+    doc = "Defines a WIT library with automatic dependency resolution via wkg wit fetch",
 )
 
 # ============================================================================

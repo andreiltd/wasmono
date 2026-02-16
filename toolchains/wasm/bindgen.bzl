@@ -185,7 +185,7 @@ def _wit_bindgen_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
     # Create wrapper scripts for common wit-bindgen subcommands
     def create_subcommand(name, subcommand):
         return cmd_script(
-            ctx = ctx,
+            actions = ctx.actions,
             name = name,
             cmd = cmd_args(wit_bindgen, subcommand),
             language = ScriptLanguage("bat" if dist.os == "windows" else "sh"),

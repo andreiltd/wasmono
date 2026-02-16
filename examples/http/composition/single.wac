@@ -1,0 +1,12 @@
+package example:composition;
+
+// Instantiate the service component (terminal handler)
+let srv = new my:service { ... };
+
+// Instantiate middleware_a, wiring its handler import to the service export
+let mdl = new my:middleware {
+    "wasi:http/handler@0.3.0-rc-2026-01-06": srv["wasi:http/handler@0.3.0-rc-2026-01-06"], ...
+};
+
+// Export the middleware's handler as the composed service handler
+export mdl["my:logging-middleware/handler"] as "wasi:http/handler@0.3.0-rc-2026-01-06";

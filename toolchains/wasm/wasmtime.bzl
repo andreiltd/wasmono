@@ -167,7 +167,7 @@ def _wasmtime_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
     wasmtime = ctx.attrs.distribution[RunInfo]
 
     wasmtime_run = cmd_script(
-        ctx = ctx,
+        actions = ctx.actions,
         name = "wasmtime_run",
         cmd = cmd_args(wasmtime, "run"),
         language = ScriptLanguage("bat" if dist.os == "windows" else "sh"),

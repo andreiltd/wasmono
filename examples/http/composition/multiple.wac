@@ -1,0 +1,20 @@
+package example:composition;
+
+// Instantiate the service component (terminal handler)
+let srv = new my:service { ... };
+
+// Chain: service -> middleware_c -> middleware_b -> middleware_a (outermost)
+let mdl-c = new my:middleware-c {
+    "wasi:http/handler@0.3.0-rc-2026-01-06": srv["wasi:http/handler@0.3.0-rc-2026-01-06"], ...
+};
+
+let mdl-b = new my:middleware-b {
+    "wasi:http/handler@0.3.0-rc-2026-01-06": mdl-c["my:logging-middleware/handler"], ...
+};
+
+let mdl-a = new my:middleware-a {
+    "wasi:http/handler@0.3.0-rc-2026-01-06": mdl-b["my:logging-middleware/handler"], ...
+};
+
+// Export the outermost middleware's handler
+export mdl-a["my:logging-middleware/handler"] as "wasi:http/handler@0.3.0-rc-2026-01-06";

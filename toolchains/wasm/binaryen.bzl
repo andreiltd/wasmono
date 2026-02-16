@@ -190,7 +190,7 @@ def _binaryen_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
         """Create a wrapper that runs a sibling binary next to wasm-opt."""
         sibling = cmd_args(wasm_opt, format = "{{}}/../{}".format(binary_name))
         return cmd_script(
-            ctx = ctx,
+            actions = ctx.actions,
             name = name,
             cmd = sibling,
             language = ScriptLanguage("bat" if dist.os == "windows" else "sh"),

@@ -27,14 +27,14 @@ JcoInfo = provider(
 
 def _system_jco_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
     jco = cmd_script(
-        ctx = ctx,
+        actions = ctx.actions,
         name = "jco",
         cmd = cmd_args("jco"),
         language = ScriptLanguage("sh"),
     )
 
     componentize = cmd_script(
-        ctx = ctx,
+        actions = ctx.actions,
         name = "jco_componentize",
         cmd = cmd_args("jco", "componentize"),
         language = ScriptLanguage("sh"),

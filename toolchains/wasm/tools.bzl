@@ -212,7 +212,7 @@ def _wasm_tools_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
     # Create wrapper scripts for common wasm-tools subcommands
     def create_subcommand(name, subcommand):
         return cmd_script(
-            ctx = ctx,
+            actions = ctx.actions,
             name = name,
             cmd = cmd_args(wasm_tools, subcommand),
             language = ScriptLanguage("bat" if dist.os == "windows" else "sh"),

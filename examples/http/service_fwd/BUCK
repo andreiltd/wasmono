@@ -1,0 +1,35 @@
+load("@toolchains//wasm:component.bzl", "wit_bindgen_rust", "wasm_component", "wit_library")
+
+wit_library(
+    name = "wit_resolved",
+    wit = glob(["wit/**/*.wit"]),
+)
+
+wit_bindgen_rust(
+    name = "service_fwd_bindings",
+    world = "my:service/service",
+    async_config = ["all"],
+    deps = [":wit_resolved"],
+    wit = [],
+)
+
+rust_binary(
+    name = "service_fwd",
+    crate = "service_fwd",
+    crate_root = "src/lib.rs",
+    srcs = ["src/lib.rs"],
+    mapped_srcs = {
+        ":service_fwd_bindings": "src/bindings.rs",
+    },
+    deps = [
+        "//third-party:wit-bindgen",
+    ],
+    _cxx_toolchain = "toolchains//:rust_linker",
+)
+
+wasm_component(
+    name = "service_fwd_component",
+    module = ":service_fwd",
+    wit = "wit/world.wit",
+    visibility = ["PUBLIC"],
+)

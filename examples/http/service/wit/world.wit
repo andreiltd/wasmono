@@ -1,0 +1,5 @@
+package my:service;
+
+world service {
+    include wasi:http/service@0.3.0-rc-2026-01-06;
+}
