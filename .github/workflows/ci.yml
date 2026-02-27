@@ -30,11 +30,5 @@ jobs:
       - name: Install jco
         run: npm install -g @bytecodealliance/jco
 
-      - name: Build and run hello example
-        run: ./buck2 run //examples/hello:run
-
-      - name: Build and run validator example
-        run: ./buck2 run //examples/validator/runner:validator -- "Hello World"
-
-      - name: Build and run HTTP example
-        run: ./buck2 run //examples/http/runner:runner
+      - name: Run tests
+        run: ./buck2 test //examples/...

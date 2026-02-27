@@ -19,3 +19,8 @@ rust_binary(
     },
     visibility = ["PUBLIC"],
 )
+
+sh_test(
+    name = "test",
+    test = ":runner",
+)

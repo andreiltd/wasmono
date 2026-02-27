@@ -1,4 +1,4 @@
-load("@toolchains//wasm:component.bzl", "wasm_component", "wasm_run")
+load("@toolchains//wasm:component.bzl", "wasm_component", "wasm_run", "wasm_test")
 
 rust_binary(
     name = "hello",
@@ -17,5 +17,10 @@ wasm_component(
 
 wasm_run(
     name = "run",
+    component = ":hello_component",
+)
+
+wasm_test(
+    name = "test",
     component = ":hello_component",
 )

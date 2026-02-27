@@ -12,3 +12,9 @@ rust_binary(
     },
     visibility = ["PUBLIC"],
 )
+
+sh_test(
+    name = "test",
+    test = ":validator",
+    args = ["Hello World"],
+)
