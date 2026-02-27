@@ -44,7 +44,7 @@ def wasm_demo_toolchains(
         wac_version = "0.9.0",
         wkg_version = "0.13.0",
         binaryen_version = "125",
-        wasmtime_version = "41.0.3"):
+        wasmtime_version = "42.0.1"):
     """Create WASM toolchain targets with sensible defaults.
 
     Note: `cxx_wasi` must be added separately — see module docstring.

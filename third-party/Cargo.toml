@@ -15,9 +15,9 @@ path = "/dev/null"
 anyhow = "1"
 regex = "1"
 wit-bindgen = "0.53"
-wasmtime = "41"
-wasmtime-wasi = { version = "41", default-features = false, features = ["p2", "p3"] }
-wasmtime-wasi-http = { version = "41", default-features = false, features = ["p3"] }
+wasmtime = "42"
+wasmtime-wasi = { version = "42", default-features = false, features = ["p2", "p3"] }
+wasmtime-wasi-http = { version = "42", default-features = false, features = ["p3"] }
 tokio = { version = "1", features = ["rt", "macros"] }
 http = "1"
 http-body = "1"

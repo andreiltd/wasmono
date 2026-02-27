@@ -9,4 +9,4 @@ env = { OPT_LEVEL = "3" }
 [[cxx_library]]
 name = "wasmtime-helpers"
 srcs = ["src/runtime/vm/helpers.c"]
-compiler_flags = ["-DVERSIONED_SUFFIX=_41_0_3", "-DFEATURE_DEBUG_BUILTINS"]
+compiler_flags = ["-DVERSIONED_SUFFIX=_42_0_1", "-DFEATURE_DEBUG_BUILTINS"]

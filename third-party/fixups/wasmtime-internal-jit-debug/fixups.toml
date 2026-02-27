@@ -4,4 +4,4 @@ buildscript.run = false
 [[cxx_library]]
 name = "gdbjit-helpers"
 srcs = ["gdbjit.c"]
-compiler_flags = ["-DVERSIONED_SUFFIX=_41_0_3"]
+compiler_flags = ["-DVERSIONED_SUFFIX=_42_0_1"]

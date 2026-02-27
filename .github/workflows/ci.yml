@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dotslash
+        uses: taiki-e/install-action@v2
+        with:
+          tool: dotslash
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1,wasm32-wasip2
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install jco
+        run: npm install -g @bytecodealliance/jco
+
+      - name: Build and run hello example
+        run: ./buck2 run //examples/hello:run
+
+      - name: Build and run validator example
+        run: ./buck2 run //examples/validator/runner:validator -- "Hello World"
+
+      - name: Build and run HTTP example
+        run: ./buck2 run //examples/http/runner:runner

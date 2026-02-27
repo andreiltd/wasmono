@@ -74,7 +74,6 @@ async fn run_http<E: Into<ErrorCode> + 'static>(
     req: http::Request<impl http_body::Body<Data = Bytes, Error = E> + Send + Sync + 'static>,
 ) -> Result<Result<http::Response<Collected<Bytes>>, Option<ErrorCode>>> {
     let mut config = Config::new();
-    config.async_support(true);
     config.wasm_component_model(true);
     config.wasm_component_model_async(true);
 
@@ -83,12 +82,9 @@ async fn run_http<E: Into<ErrorCode> + 'static>(
     let mut store = Store::new(&engine, Ctx::default());
 
     let mut linker = Linker::new(&engine);
-    wasmtime_wasi::p2::add_to_linker_async(&mut linker)
-        .context("failed to link wasi:cli@0.2.x")?;
-    wasmtime_wasi::p3::add_to_linker(&mut linker)
-        .context("failed to link wasi:cli@0.3.x")?;
-    wasmtime_wasi_http::p3::add_to_linker(&mut linker)
-        .context("failed to link wasi:http@0.3.x")?;
+    wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+    wasmtime_wasi::p3::add_to_linker(&mut linker)?;
+    wasmtime_wasi_http::p3::add_to_linker(&mut linker)?;
 
     let service = wasmtime_wasi_http::p3::bindings::Service::instantiate_async(
         &mut store, &component, &linker,
