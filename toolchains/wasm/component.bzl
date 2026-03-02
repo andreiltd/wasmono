@@ -81,6 +81,8 @@ load(
     "merge_shared_libraries",
 )
 
+load("@prelude//decls:common.bzl", buck = "buck")
+load("@prelude//os_lookup:defs.bzl", "OsLookup")
 load(":bindgen.bzl", "WitBindgenInfo")
 load(":binaryen.bzl", "BinaryenInfo")
 load(":jco.bzl", "JcoInfo")
@@ -1169,8 +1171,13 @@ def _build_wasmtime_cmd(wasmtime_info, component_file, attrs):
     """Build a wasmtime run command from common attributes."""
     cmd = cmd_args(wasmtime_info.run)
 
+    for flag in attrs.wasmtime_flags:
+        cmd.add(flag)
+
     if attrs.wasi_inherit_env:
         cmd.add("--inherit-env")
+    for key in sorted(attrs.env.keys()):
+        cmd.add("--env", "{}={}".format(key, attrs.env[key]))
     if attrs.wasi_inherit_network:
         cmd.add("--wasi", "inherit-network")
     for dir in attrs.wasi_dirs:
@@ -1189,6 +1196,18 @@ _WASMTIME_COMMON_ATTRS = {
         default = [],
         doc = "Arguments to pass to the WASM component",
     ),
+    "env": attrs.dict(
+        key = attrs.string(),
+        value = attrs.string(),
+        sorted = False,
+        default = {},
+        doc = "Environment variables for the WASI component (passed as --env KEY=VAL)",
+    ),
+    "wasmtime_flags": attrs.list(
+        attrs.string(),
+        default = [],
+        doc = "Extra wasmtime CLI flags added before the component path (e.g. '-Wcomponent-model-async')",
+    ),
     "wasi_inherit_env": attrs.bool(
         default = False,
         doc = "Inherit host environment variables in the WASI context",
@@ -1206,6 +1225,7 @@ _WASMTIME_COMMON_ATTRS = {
         default = "toolchains//:wasmtime",
         providers = [WasmtimeInfo],
     ),
+    "_exec_os_type": buck.exec_os_type_arg(),
 }
 
 def _wasm_run_impl(ctx: AnalysisContext) -> list[Provider]:
@@ -1237,12 +1257,45 @@ def _wasm_test_impl(ctx: AnalysisContext) -> list[Provider]:
 
     cmd = _build_wasmtime_cmd(wasmtime_info, component_file, ctx.attrs)
 
+    expected = ctx.attrs.expected_exit_code
+    if expected != 0:
+        is_windows = ctx.attrs._exec_os_type[OsLookup].os == "windows"
+        if is_windows:
+            wrapper, _ = ctx.actions.write(
+                ctx.actions.declare_output("test_wrapper.bat"),
+                [
+                    "@echo off",
+                    cmd_args(cmd, delimiter = " ", quote = "shell"),
+                    "set exit_code=%ERRORLEVEL%",
+                    "if %exit_code% equ {} exit /b 0".format(expected),
+                    "echo expected exit code {}, got %exit_code% 1>&2".format(expected),
+                    "exit /b 1",
+                ],
+                allow_args = True,
+            )
+        else:
+            wrapper, _ = ctx.actions.write(
+                ctx.actions.declare_output("test_wrapper.sh"),
+                [
+                    "#!/usr/bin/env bash",
+                    cmd_args(cmd, delimiter = " ", quote = "shell"),
+                    "exit_code=$?",
+                    "if [ \"$exit_code\" -eq {} ]; then exit 0; else echo \"expected exit code {}, got $exit_code\" >&2; exit 1; fi".format(expected, expected),
+                ],
+                is_executable = True,
+                allow_args = True,
+            )
+        test_cmd = cmd_args(wrapper, hidden = [cmd])
+    else:
+        test_cmd = cmd
+
     return [
         DefaultInfo(default_output = component_file),
         RunInfo(args = cmd),
         ExternalRunnerTestInfo(
             type = "custom",
-            command = [cmd],
+            command = [test_cmd],
+            env = ctx.attrs.env,
         ),
     ]
 
@@ -1251,6 +1304,10 @@ wasm_test = rule(
     attrs = dict({
         "component": attrs.dep(
             doc = "Component or module to test (dep producing .wasm or .component.wasm)",
+        ),
+        "expected_exit_code": attrs.int(
+            default = 0,
+            doc = "Expected exit code from wasmtime. Test passes when the exit code matches.",
         ),
     }, **_WASMTIME_COMMON_ATTRS),
     doc = "Tests a WASM component by running it with 'wasmtime run' and checking exit code. Use with 'buck2 test'.",
