@@ -143,10 +143,15 @@ def download_wasmtime(
         sha256 = release.sha256,
     )
 
+    if version == "dev":
+        prefix = "wasmtime-dev-{}-{}".format(arch, os)
+    else:
+        prefix = "wasmtime-v{}-{}-{}".format(version, arch, os)
+
     wasmtime_distribution(
         name = name,
         dist = ":" + archive_name,
-        prefix = "wasmtime-v{}-{}-{}".format(version, arch, os),
+        prefix = prefix,
         suffix = ".exe" if os == "windows" else "",
         version = version,
         arch = arch,
