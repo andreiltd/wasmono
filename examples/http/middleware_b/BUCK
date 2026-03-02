@@ -9,8 +9,7 @@ wit_bindgen_rust(
     name = "middleware_b_bindings",
     world = "my:logging-middleware/middleware",
     async_config = ["all"],
-    deps = [":wit_resolved"],
-    wit = [],
+    wit = [":wit_resolved"],
 )
 
 rust_binary(

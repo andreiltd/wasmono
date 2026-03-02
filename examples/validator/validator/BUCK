@@ -1,11 +1,11 @@
 load("@toolchains//wasm:component.bzl", "wit_bindgen_cxx", "wasm_component", "wasm_opt", "wasm_plug")
 
 # Generate C++ bindings
+# Note: dependency WIT must come before importing WIT (wit-bindgen ordering requirement)
 wit_bindgen_cxx(
     name = "validator_bindings",
     world = "wasmono:validator/validator",
-    wit = ["wit/validator.wit"],
-    deps = ["//examples/validator/regex:regex_component"],
+    wit = ["//examples/validator/regex:regex.wit", "wit/validator.wit"],
 )
 
 # Build the C++ binary with WASM target

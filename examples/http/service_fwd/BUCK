@@ -9,8 +9,7 @@ wit_bindgen_rust(
     name = "service_fwd_bindings",
     world = "my:service/service",
     async_config = ["all"],
-    deps = [":wit_resolved"],
-    wit = [],
+    wit = [":wit_resolved"],
 )
 
 rust_binary(

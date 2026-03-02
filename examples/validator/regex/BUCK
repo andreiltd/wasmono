@@ -1,5 +1,11 @@
 load("@toolchains//wasm:component.bzl", "wasm_component")
 
+export_file(
+    name = "regex.wit",
+    src = "wit/regex.wit",
+    visibility = ["PUBLIC"],
+)
+
 rust_binary(
     name = "regex",
     crate = "regex",

@@ -176,30 +176,6 @@ def _wat_files_from_deps(deps):
                     continue
     return results
 
-def _wit_from_deps(deps):
-    """Extract WIT artifacts (files, .wasm WIT packages, or directories) from configured deps."""
-    results = []
-    for dep in deps:
-        if WasmInfo in dep:
-            info = dep[WasmInfo]
-            if getattr(info, "wit", None):
-                for w in info.wit:
-                    results.append(w)
-                continue
-
-        if DefaultInfo in dep:
-            for out in dep[DefaultInfo].default_outputs:
-                name = out.basename
-                if name.endswith(".wit") or name.endswith(".wasm"):
-                    results.append(out)
-                    continue
-                # conservative heuristic for directories
-                if name == "wit":
-                    results.append(out)
-                    continue
-
-    return results
-
 def _all_wasm_files_from_deps(deps):
     """Collect modules, components, and wat files from deps."""
     modules = _wasm_modules_from_deps(deps)
@@ -501,9 +477,7 @@ def _wit_bindgen_base_impl(ctx: AnalysisContext, language: str, outputs: dict, e
     """Generic wit-bindgen implementation that returns common providers."""
     # Gather WIT inputs and build the bindgen command
     wit_bindgen_info = ctx.attrs._wit_bindgen_toolchain[WitBindgenInfo]
-    produced = _wit_from_deps(ctx.attrs.deps) if ctx.attrs.deps else []
-    explicit = list(ctx.attrs.wit) if ctx.attrs.wit else []
-    all_wits = produced + explicit
+    all_wits = list(ctx.attrs.wit)
 
     srcs, objs, headers = outputs["srcs"], outputs["objs"], outputs["headers"]
     outdir = cmd_args("--out-dir", srcs[0].as_output(), parent = 1)
@@ -546,12 +520,8 @@ def _wit_bindgen_base_impl(ctx: AnalysisContext, language: str, outputs: dict, e
 _wit_bindgen_common_attrs = {
     "wit": attrs.list(
         attrs.source(),
-        doc = "WIT files, directories, or .wasm files to generate bindings from",
-    ),
-    "deps": attrs.list(
-        attrs.dep(),
         default = [],
-        doc = "Optional targets that produce WIT artifacts (e.g. wasm_component, export_file, filegroup)",
+        doc = "WIT sources: files, directories, .wasm packages, or targets (e.g. wit_library, wasm_component)",
     ),
     "world": attrs.option(
         attrs.string(),
@@ -658,9 +628,7 @@ def _wit_to_markdown_impl(ctx: AnalysisContext) -> list[Provider]:
     wit_bindgen_info = ctx.attrs._wit_bindgen_toolchain[WitBindgenInfo]
     output_file = ctx.actions.declare_output("{}.md".format(ctx.label.name))
 
-    explicit = list(ctx.attrs.wit) if ctx.attrs.wit else []
-    produced = _wit_from_deps(ctx.attrs.deps) if ctx.attrs.deps else []
-    all_wits = explicit + produced
+    all_wits = list(ctx.attrs.wit)
 
     cmd = cmd_args(wit_bindgen_info.markdown)
     for w in all_wits:
@@ -679,8 +647,7 @@ def _wit_to_markdown_impl(ctx: AnalysisContext) -> list[Provider]:
 wit_to_markdown = rule(
     impl = _wit_to_markdown_impl,
     attrs = {
-        "wit": attrs.list(attrs.source(), doc = "WIT files or directories to generate documentation from"),
-        "deps": attrs.list(attrs.dep(), default = [], doc = "Optional targets that produce WIT artifacts"),
+        "wit": attrs.list(attrs.source(), default = [], doc = "WIT sources: files, directories, or targets producing WIT artifacts"),
         "world": attrs.option(attrs.string(), default = None, doc = "Optional world name to document"),
         "_wit_bindgen_toolchain": attrs.toolchain_dep(default = "toolchains//:wit_bindgen", providers = [WitBindgenInfo]),
     },
