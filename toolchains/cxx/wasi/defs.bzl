@@ -70,31 +70,11 @@ load(
     ":releases.bzl",
     "releases",
 )
-
-def _host_arch() -> str:
-    arch = host_info().arch
-    if arch.is_x86_64:
-        return "x86_64"
-    elif arch.is_aarch64:
-        return "aarch64"
-    else:
-        fail("Unsupported host architecture.")
-
-def _host_os(os_map: [None, dict] = None) -> str:
-    os = host_info().os
-    if os.is_linux:
-        key = "linux"
-    elif os.is_macos:
-        key = "macos"
-    elif os.is_windows:
-        key = "windows"
-    else:
-        fail("Unsupported host OS.")
-    if os_map:
-        if key not in os_map:
-            fail("No OS mapping for '{}'. Available: {}".format(key, ", ".join(os_map.keys())))
-        return os_map[key]
-    return key
+load(
+    "//wasm:host.bzl",
+    "host_arch",
+    "host_os",
+)
 
 _WASI_SDK_ARCH_MAP = {
     "x86_64": "x86_64",
@@ -175,9 +155,9 @@ def download_wasi_sdk(
         arch: [None, str] = None,
         os: [None, str] = None):
     if arch == None:
-        arch = _WASI_SDK_ARCH_MAP[_host_arch()]
+        arch = _WASI_SDK_ARCH_MAP[host_arch()]
     if os == None:
-        os = _host_os()
+        os = host_os()
 
     archive_name = name + "-archive"
     release = _get_wasi_sdk_release(version, "{}-{}".format(arch, os))
