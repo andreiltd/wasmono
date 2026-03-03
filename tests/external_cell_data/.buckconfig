@@ -1,0 +1,32 @@
+[cells]
+  root = .
+  wasmono = wasmono
+  toolchains = toolchains
+  prelude = prelude
+  none = none
+
+[cell_aliases]
+  config = prelude
+  ovr_config = prelude
+  fbcode = none
+  fbsource = none
+  fbcode_macros = none
+  buck = none
+
+[external_cells]
+  prelude = bundled
+  wasmono = git
+
+[build]
+  execution_platforms = prelude//platforms:default
+
+[parser]
+  target_platform_detector_spec = target:root//...->prelude//platforms:default
+
+[project]
+  ignore = .git
+
+# Written by test script before invoking buck2
+[external_cell_wasmono]
+  git_origin = <PLACEHOLDER>
+  commit_hash = <PLACEHOLDER>

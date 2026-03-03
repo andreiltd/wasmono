@@ -1,0 +1,22 @@
+load("@prelude//toolchains:genrule.bzl", "system_genrule_toolchain")
+load("@prelude//toolchains:cxx.bzl", "system_cxx_toolchain")
+load("@prelude//toolchains:python.bzl", "system_python_bootstrap_toolchain")
+load("@prelude//toolchains:rust.bzl", "system_rust_toolchain")
+load("@prelude//tests:test_toolchain.bzl", "noop_test_toolchain")
+load("@prelude//toolchains:remote_test_execution.bzl", "remote_test_execution_toolchain")
+
+load("@wasmono//toolchains/wasm:demo.bzl", "wasm_demo_toolchains")
+load("@wasmono//toolchains/cxx/wasi:defs.bzl", "download_wasi_sdk", "cxx_wasi_toolchain")
+
+system_genrule_toolchain(name = "genrule", visibility = ["PUBLIC"])
+system_cxx_toolchain(name = "cxx", visibility = ["PUBLIC"])
+system_python_bootstrap_toolchain(name = "python_bootstrap", visibility = ["PUBLIC"])
+system_rust_toolchain(name = "rust", default_edition = "2024", visibility = ["PUBLIC"])
+
+wasm_demo_toolchains()
+
+download_wasi_sdk(name = "wasi_sdk", version = "27.0")
+cxx_wasi_toolchain(name = "cxx_wasi", distribution = ":wasi_sdk", visibility = ["PUBLIC"])
+
+noop_test_toolchain(name = "test", visibility = ["PUBLIC"])
+remote_test_execution_toolchain(name = "remote_test_execution", visibility = ["PUBLIC"])

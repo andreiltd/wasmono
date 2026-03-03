@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install dotslash
         uses: taiki-e/install-action@v2
@@ -22,13 +24,8 @@ jobs:
         with:
           targets: wasm32-wasip1,wasm32-wasip2
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Install jco
-        run: npm install -g @bytecodealliance/jco
-
       - name: Run tests
         run: ./buck2 test //examples/...
+
+      - name: Test external cell compatibility
+        run: python3 tests/test_external_cell.py

@@ -14,7 +14,7 @@ Two toolchain flavors are provided:
 ### Hermetic (recommended)
 
 ```bzl
-load("//node:defs.bzl", "download_node", "node_toolchain")
+load("//wasm:node.bzl", "download_node", "node_toolchain")
 load("//wasm:jco.bzl", "install_jco", "jco_toolchain")
 
 download_node(name = "node_dist", version = "20.18.0")
@@ -40,7 +40,7 @@ load(
     "cmd_script",
 )
 load(
-    "//node:defs.bzl",
+    ":node.bzl",
     "NodeInfo",
 )
 

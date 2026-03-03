@@ -22,7 +22,7 @@ target_platform_detector_spec = target:root//...->prelude//platforms:default
 execution_platforms = prelude//platforms:default
 
 [project]
-ignore = .git
+ignore = .git, tests/external_cell_data
 
 [rust]
 default_edition = "2024"

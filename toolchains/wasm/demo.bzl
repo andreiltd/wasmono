@@ -38,7 +38,7 @@ load(":tools.bzl", "download_wasm_tools", "wasm_tools_toolchain")
 load(":wac.bzl", "download_wac", "wac_toolchain")
 load(":wasmtime.bzl", "download_wasmtime", "wasmtime_toolchain")
 load(":wkg.bzl", "download_wkg", "wkg_toolchain")
-load("//node:defs.bzl", "download_node", "node_toolchain")
+load(":node.bzl", "download_node", "node_toolchain")
 
 def wasm_demo_toolchains(
         wasm_tools_version = "1.245.1",

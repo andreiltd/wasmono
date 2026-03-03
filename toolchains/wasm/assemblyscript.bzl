@@ -8,7 +8,7 @@ a rule to compile `.ts` files to `.wasm` modules.
 ### Toolchain setup (in `toolchains/BUCK`)
 
 ```bzl
-load("//node:defs.bzl", "download_node", "node_toolchain")
+load("//wasm:node.bzl", "download_node", "node_toolchain")
 load("//wasm:assemblyscript.bzl", "install_asc", "asc_toolchain")
 
 download_node(name = "node_dist", version = "20.18.0")
@@ -31,7 +31,7 @@ assemblyscript_binary(
 """
 
 load(
-    "//node:defs.bzl",
+    ":node.bzl",
     "NodeInfo",
 )
 

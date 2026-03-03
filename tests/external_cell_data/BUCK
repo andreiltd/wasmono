@@ -1,0 +1,10 @@
+# Verify that wasmono rules load correctly as an external cell.
+# These loads exercise cross-package resolution within the external cell.
+load("@wasmono//toolchains/wasm:component.bzl", "wasm_component", "wasm_test")
+load("@wasmono//toolchains/wasm:assemblyscript.bzl", "assemblyscript_binary")
+
+genrule(
+    name = "check",
+    out = "ok.txt",
+    cmd = "echo ok > $OUT",
+)
