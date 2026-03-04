@@ -1,6 +1,7 @@
 # WASI-SDK release information
 # Update from https://github.com/WebAssembly/wasi-sdk/releases
 releases = {
+    # renovate: datasource=github-releases depName=WebAssembly/wasi-sdk extractVersion=^wasi-sdk-(?<version>[\d.]+)$
     "27.0": {
         "arm64-linux": {
             "shasum": "4cf4c553c4640e63e780442146f87d83fdff5737f988c06a6e3b2f0228e37665",

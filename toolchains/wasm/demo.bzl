@@ -41,13 +41,21 @@ load(":wkg.bzl", "download_wkg", "wkg_toolchain")
 load(":node.bzl", "download_node", "node_toolchain")
 
 def wasm_demo_toolchains(
+        # renovate: datasource=github-releases depName=bytecodealliance/wasm-tools
         wasm_tools_version = "1.245.1",
+        # renovate: datasource=github-releases depName=bytecodealliance/wit-bindgen
         wit_bindgen_version = "0.53.0",
+        # renovate: datasource=github-releases depName=bytecodealliance/wac
         wac_version = "0.9.0",
+        # renovate: datasource=github-releases depName=bytecodealliance/wasm-pkg-tools
         wkg_version = "0.13.0",
+        # renovate: datasource=github-releases depName=WebAssembly/binaryen versioning=loose extractVersion=^version_(?<version>\d+)$
         binaryen_version = "125",
+        # renovate: datasource=github-releases depName=bytecodealliance/wasmtime
         wasmtime_version = "42.0.1",
+        # renovate: datasource=node-version depName=node
         node_version = "20.18.0",
+        # renovate: datasource=npm depName=@bytecodealliance/jco
         jco_version = "1.17.0",
         asc_version = None):
     """Create WASM toolchain targets with sensible defaults.

@@ -1,0 +1,62 @@
+name: Update release checksums
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'toolchains/wasm/demo.bzl'
+      - 'toolchains/cxx/wasi/releases.bzl'
+
+permissions:
+  contents: write
+
+jobs:
+  update-checksums:
+    # Only run on Renovate PRs
+    if: startsWith(github.head_ref, 'renovate/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 2
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Detect version changes
+        id: detect
+        run: |
+          if python3 .github/scripts/detect-version-changes.py "${{ github.base_ref }}" > /tmp/updates.txt; then
+            cat /tmp/updates.txt
+            echo "has_updates=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_updates=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update release checksums
+        if: steps.detect.outputs.has_updates == 'true'
+        run: |
+          while IFS='=' read -r tool version; do
+            echo "::group::Updating $tool to $version"
+            python3 .github/scripts/update-releases.py "$tool" "$version"
+            echo "::endgroup::"
+          done < /tmp/updates.txt
+
+      - name: Commit and push
+        if: steps.detect.outputs.has_updates == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add toolchains/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update release checksums
+
+          Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+            git push
+          fi

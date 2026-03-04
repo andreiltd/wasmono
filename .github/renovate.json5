@@ -1,0 +1,47 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["toolchains/wasm/demo\\.bzl$"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)(?: versioning=(?<versioning>[^\\s]+))?(?: extractVersion=(?<extractVersion>[^\\n]+))?\\n\\s+\\w+_version\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver-coerced{{/if}}"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["toolchains/cxx/wasi/releases\\.bzl$"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)(?: extractVersion=(?<extractVersion>[^\\n]+))?\\n\\s+\"(?<currentValue>[^\"]+)\":\\s*\\{"
+      ],
+      "versioningTemplate": "semver-coerced"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Pin wkg to 0.13.x for WASI P3 compatibility",
+      "matchPackageNames": ["bytecodealliance/wasm-pkg-tools"],
+      "allowedVersions": ">=0.13.0 <0.14.0"
+    },
+    {
+      "description": "Exclude wasmtime pre-release and dev builds",
+      "matchPackageNames": ["bytecodealliance/wasmtime"],
+      "ignoreUnstable": true
+    },
+    {
+      "description": "Group wasmtime CLI and related tooling",
+      "matchPackageNames": ["bytecodealliance/wasmtime"],
+      "groupName": "wasmtime"
+    },
+    {
+      "description": "Group all wasm toolchain updates",
+      "matchPackagePatterns": ["bytecodealliance/*", "WebAssembly/*"],
+      "groupName": "wasm-toolchain",
+      "schedule": ["before 9am on Monday"]
+    }
+  ]
+}
