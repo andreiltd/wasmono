@@ -266,3 +266,7 @@ platform(
 ```python
 load("@wasmono//toolchains/wasm:component.bzl", "wasm_component", "wasm_compose")
 ```
+
+## Acknowledgments
+
+The http example is port of great p3 demo from https://github.com/ejrgilbert/component-interposition
