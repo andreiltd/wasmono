@@ -29,6 +29,8 @@ cargo binstall dotslash
 - **Composition**: Link, plug, and compose components together (via WAC)
 - **Package Management**: Fetch components from WASM registries
 - **Optimization**: Run wasm-opt (Binaryen) on modules
+- **Partial Evaluation**: Specialize WASM interpreters into compiled code (via weval)
+- **Pre-initialization**: Snapshot module initialization state (via wasmtime wizer)
 - **JavaScript Components**: Build components from JavaScript (via jco)
 
 ## Build a Component
@@ -69,6 +71,8 @@ wasm_component(
 - `wasm_validate` - Validate WASM binaries
 - `wasm_print` - Convert WASM to text format
 - `wasm_opt` - Optimize WASM modules with Binaryen
+- `wasm_weval` - Partially evaluate WASM modules with weval
+- `wasm_wizer` - Pre-initialize WASM modules with wasmtime wizer
 
 ### Binding Generation
 
@@ -163,6 +167,8 @@ Available toolchains:
 - **wasi-sdk** - C/C++ wasi toolchain (https://github.com/WebAssembly/wasi-sdk)
 - **binaryen** - WASM optimizer / wasm-opt (https://github.com/WebAssembly/binaryen)
 - **jco** - JavaScript component toolchain (system install, https://github.com/bytecodealliance/jco)
+- **weval** - WASM partial evaluator (opt-in, https://github.com/bytecodealliance/weval)
+- **wasmtime** - WASM runtime, also provides wizer pre-initialization (https://github.com/bytecodealliance/wasmtime)
 
 ## Using as an External Cell
 

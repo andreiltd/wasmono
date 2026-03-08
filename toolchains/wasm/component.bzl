@@ -12,6 +12,10 @@ This module provides comprehensive WASM component tooling:
 ## WASM Execution Rules (using wasmtime CLI):
 - wasm_run: Run a WASM component and capture output
 - wasm_test: Test a WASM component (exit code = pass/fail)
+- wasm_wizer: Pre-initialize a WASM module (snapshot initialization state)
+
+## WASM Optimization Rules:
+- wasm_weval: Partially evaluate a WASM module (via weval)
 
 ## WIT Binding Generation Rules (using wit-bindgen):
 - wit_bindgen_rust: Generate Rust bindings from WIT
@@ -90,6 +94,7 @@ load(":tools.bzl", "WasmToolsInfo")
 load(":transition.bzl", "wasm_transition")
 load(":wac.bzl", "WacInfo")
 load(":wasmtime.bzl", "WasmtimeInfo")
+load(":weval.bzl", "WevalInfo")
 load(":wkg.bzl", "WkgInfo")
 
 # ============================================================================
@@ -1311,4 +1316,135 @@ wasm_test = rule(
         ),
     }, **_WASMTIME_COMMON_ATTRS),
     doc = "Tests a WASM component by running it with 'wasmtime run' and checking exit code. Use with 'buck2 test'.",
+)
+
+# ============================================================================
+# WASM WIZER (pre-initialize a WASM module using wasmtime wizer)
+# ============================================================================
+
+def _wasm_wizer_impl(ctx: AnalysisContext) -> list[Provider]:
+    """Pre-initialize a WASM module by snapshotting its initialization state."""
+    wasmtime_info = ctx.attrs._wasmtime_toolchain[WasmtimeInfo]
+
+    input_file = ctx.attrs.input[DefaultInfo].default_outputs[0]
+    output_file = ctx.actions.declare_output("{}.preinit.wasm".format(ctx.label.name))
+
+    cmd = cmd_args(wasmtime_info.wizer)
+    cmd.add(input_file)
+
+    if ctx.attrs.init_func:
+        cmd.add("--init-func")
+        cmd.add(ctx.attrs.init_func)
+
+    if ctx.attrs.allow_wasi:
+        cmd.add("--allow-wasi")
+
+    for flag in ctx.attrs.extra_flags:
+        cmd.add(flag)
+
+    cmd.add("-o")
+    cmd.add(output_file.as_output())
+
+    ctx.actions.run(cmd, category = "wasm_wizer")
+
+    providers = [DefaultInfo(default_output = output_file)]
+    if WasmInfo in ctx.attrs.input:
+        wasm_info = ctx.attrs.input[WasmInfo]
+        providers.append(WasmInfo(
+            module = output_file if wasm_info.module else None,
+            component = output_file if wasm_info.component else None,
+            wit = wasm_info.wit,
+        ))
+
+    return providers
+
+wasm_wizer = rule(
+    impl = _wasm_wizer_impl,
+    attrs = {
+        "input": attrs.dep(
+            providers = [DefaultInfo],
+            doc = "WASM module to pre-initialize",
+        ),
+        "init_func": attrs.option(
+            attrs.string(),
+            default = None,
+            doc = "Initialization function to call (default: wizer.initialize)",
+        ),
+        "allow_wasi": attrs.bool(
+            default = False,
+            doc = "Allow WASI imports during initialization",
+        ),
+        "extra_flags": attrs.list(
+            attrs.string(),
+            default = [],
+            doc = "Additional flags to pass to wasmtime wizer",
+        ),
+        "_wasmtime_toolchain": attrs.toolchain_dep(
+            default = "toolchains//:wasmtime",
+            providers = [WasmtimeInfo],
+        ),
+    },
+    doc = "Pre-initializes a WASM module by snapshotting its initialization state using 'wasmtime wizer'",
+)
+
+# ============================================================================
+# WASM WEVAL (partially evaluate a WASM module)
+# ============================================================================
+
+def _wasm_weval_impl(ctx: AnalysisContext) -> list[Provider]:
+    """Partially evaluate a WASM module using weval."""
+    weval_info = ctx.attrs._weval_toolchain[WevalInfo]
+
+    input_file = ctx.attrs.input[DefaultInfo].default_outputs[0]
+    output_file = ctx.actions.declare_output("{}.weval.wasm".format(ctx.label.name))
+
+    cmd = cmd_args(weval_info.weval)
+
+    if ctx.attrs.wizen:
+        cmd.add("-w")
+
+    cmd.add("-i")
+    cmd.add(input_file)
+
+    cmd.add("-o")
+    cmd.add(output_file.as_output())
+
+    for flag in ctx.attrs.extra_flags:
+        cmd.add(flag)
+
+    ctx.actions.run(cmd, category = "wasm_weval")
+
+    providers = [DefaultInfo(default_output = output_file)]
+    if WasmInfo in ctx.attrs.input:
+        wasm_info = ctx.attrs.input[WasmInfo]
+        providers.append(WasmInfo(
+            module = output_file if wasm_info.module else None,
+            component = output_file if wasm_info.component else None,
+            wit = wasm_info.wit,
+        ))
+
+    return providers
+
+wasm_weval = rule(
+    impl = _wasm_weval_impl,
+    attrs = {
+        "input": attrs.dep(
+            providers = [DefaultInfo],
+            doc = "WASM module to partially evaluate",
+        ),
+        "wizen": attrs.bool(
+            default = True,
+            doc = "Run Wizer pre-initialization before partial evaluation (-w flag)",
+        ),
+        "extra_flags": attrs.list(
+            attrs.string(),
+            default = [],
+            doc = "Additional flags to pass to weval",
+        ),
+        "_weval_toolchain": attrs.toolchain_dep(
+            default = "toolchains//:weval",
+            providers = [WevalInfo],
+        ),
+    },
+    doc = "Partially evaluates a WASM module using weval, specializing interpreter snapshots into optimized code",
 )

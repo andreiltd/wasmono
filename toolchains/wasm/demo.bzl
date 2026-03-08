@@ -26,7 +26,8 @@ cxx_wasi_toolchain(name = "cxx_wasi", distribution = ":wasi_sdk", visibility = [
 
 This creates all the WASM-related toolchain targets that wasmono rules expect:
 `node`, `wasm_tools`, `wit_bindgen`, `wac`, `wkg`, `jco`, `binaryen`, and
-`wasmtime`. The `cxx_wasi` toolchain must be added separately (shown above)
+`wasmtime`. Optionally, `weval` can be enabled by setting `weval_version`.
+The `cxx_wasi` toolchain must be added separately (shown above)
 because it requires its own `download_wasi_sdk` call.
 """
 
@@ -37,6 +38,7 @@ load(":jco.bzl", "install_jco", "jco_toolchain", "system_jco_toolchain")
 load(":tools.bzl", "download_wasm_tools", "wasm_tools_toolchain")
 load(":wac.bzl", "download_wac", "wac_toolchain")
 load(":wasmtime.bzl", "download_wasmtime", "wasmtime_toolchain")
+load(":weval.bzl", "download_weval", "weval_toolchain")
 load(":wkg.bzl", "download_wkg", "wkg_toolchain")
 load(":node.bzl", "download_node", "node_toolchain")
 
@@ -57,7 +59,9 @@ def wasm_demo_toolchains(
         node_version = "20.18.0",
         # renovate: datasource=npm depName=@bytecodealliance/jco
         jco_version = "1.17.0",
-        asc_version = None):
+        asc_version = None,
+        # renovate: datasource=github-releases depName=bytecodealliance/weval
+        weval_version = None):
     """Create WASM toolchain targets with sensible defaults.
 
     Note: `cxx_wasi` must be added separately — see module docstring.
@@ -75,6 +79,8 @@ def wasm_demo_toolchains(
             node_version is set.
         asc_version: Version of AssemblyScript compiler to install via npm.
             Only used when node_version is set. If None, asc is not installed.
+        weval_version: Version of weval to download. If None, weval is not
+            installed.
     """
     download_wasm_tools(name = "wasm_tools_dist", version = wasm_tools_version)
     wasm_tools_toolchain(name = "wasm_tools", distribution = ":wasm_tools_dist", visibility = ["PUBLIC"])
@@ -108,3 +114,8 @@ def wasm_demo_toolchains(
 
     download_wasmtime(name = "wasmtime_dist", version = wasmtime_version)
     wasmtime_toolchain(name = "wasmtime", distribution = ":wasmtime_dist", visibility = ["PUBLIC"])
+
+    # weval — optional, only when weval_version is explicitly set
+    if weval_version != None:
+        download_weval(name = "weval_dist", version = weval_version)
+        weval_toolchain(name = "weval", distribution = ":weval_dist", visibility = ["PUBLIC"])

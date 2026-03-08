@@ -1,7 +1,8 @@
 """Wasmtime CLI toolchain for running and testing WebAssembly components.
 
 Provides a hermetic installation of the `wasmtime` CLI and exposes
-the `run` subcommand for use by `wasm_run` / `wasm_test` rules.
+the `run` and `wizer` subcommands for use by `wasm_run` / `wasm_test`
+and `wasm_wizer` rules.
 
 ## Examples
 
@@ -163,6 +164,7 @@ WasmtimeInfo = provider(
     fields = {
         "wasmtime": provider_field(RunInfo),
         "run": provider_field(RunInfo),
+        "wizer": provider_field(RunInfo),
     },
     doc = "Toolchain info provider for wasmtime CLI",
 )
@@ -171,12 +173,16 @@ def _wasmtime_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
     dist = ctx.attrs.distribution[WasmtimeDistributionInfo]
     wasmtime = ctx.attrs.distribution[RunInfo]
 
-    wasmtime_run = cmd_script(
-        actions = ctx.actions,
-        name = "wasmtime_run",
-        cmd = cmd_args(wasmtime, "run"),
-        language = ScriptLanguage("bat" if dist.os == "windows" else "sh"),
-    )
+    def create_subcommand(name, subcommand):
+        return cmd_script(
+            actions = ctx.actions,
+            name = name,
+            cmd = cmd_args(wasmtime, subcommand),
+            language = ScriptLanguage("bat" if dist.os == "windows" else "sh"),
+        )
+
+    wasmtime_run = create_subcommand("wasmtime_run", "run")
+    wasmtime_wizer = create_subcommand("wasmtime_wizer", "wizer")
 
     return [
         ctx.attrs.distribution[DefaultInfo],
@@ -184,6 +190,7 @@ def _wasmtime_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
         WasmtimeInfo(
             wasmtime = wasmtime,
             run = RunInfo(args = cmd_args(wasmtime_run)),
+            wizer = RunInfo(args = cmd_args(wasmtime_wizer)),
         ),
     ]
 
