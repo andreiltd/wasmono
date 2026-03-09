@@ -61,13 +61,19 @@ WasmToolsReleaseInfo = provider(
 
 def _get_wasm_tools_release(
         version: str,
-        platform: str) -> WasmToolsReleaseInfo:
-    if not version in wasm_tools_releases:
+        platform: str,
+        custom_releases: [None, dict] = None) -> WasmToolsReleaseInfo:
+    all_releases = wasm_tools_releases
+    if custom_releases != None:
+        all_releases = dict(wasm_tools_releases)
+        all_releases.update(custom_releases)
+
+    if not version in all_releases:
         fail("Unknown wasm-tools release version '{}'. Available versions: {}".format(
             version,
-            ", ".join(wasm_tools_releases.keys()),
+            ", ".join(all_releases.keys()),
         ))
-    wasm_tools_version = wasm_tools_releases[version]
+    wasm_tools_version = all_releases[version]
     if not platform in wasm_tools_version:
         fail("Unsupported platform '{}'. Supported platforms: {}".format(
             platform,
@@ -140,15 +146,30 @@ def download_wasm_tools(
         name: str,
         version: str,
         adapter_version: str = "latest",
+        releases: [None, dict] = None,
+        adapter_releases: [None, dict] = None,
         arch: [None, str] = None,
         os: [None, str] = None):
+    """Download and setup wasm-tools distribution.
+
+    Args:
+        name: The name for the distribution target.
+        version: The wasm-tools version to download.
+        adapter_version: WASI adapter version (default "latest").
+        releases: Optional dict of custom releases to overlay on built-in
+            releases. Format: ``{"version": {"platform": {"url": "...", "shasum": "..."}}}``.
+        adapter_releases: Optional dict of custom WASI adapter releases to
+            overlay on built-in adapter releases.
+        arch: Target architecture (defaults to host architecture).
+        os: Target OS (defaults to host OS).
+    """
     if arch == None:
         arch = host_arch()
     if os == None:
         os = host_os()
 
     archive_name = name + "-archive"
-    release = _get_wasm_tools_release(version, "{}-{}".format(arch, os))
+    release = _get_wasm_tools_release(version, "{}-{}".format(arch, os), custom_releases = releases)
 
     native.http_archive(
         name = archive_name,
@@ -156,13 +177,17 @@ def download_wasm_tools(
         sha256 = release.sha256,
     )
 
+    all_adapters = wasi_adapters
+    if adapter_releases != None:
+        all_adapters = dict(wasi_adapters)
+        all_adapters.update(adapter_releases)
 
-    if adapter_version not in wasi_adapters:
+    if adapter_version not in all_adapters:
         fail("Unknown WASI adapter version '{}'. Available versions: {}".format(
             adapter_version,
-            ", ".join(wasi_adapters.keys()),
+            ", ".join(all_adapters.keys()),
         ))
-    adapter_info = wasi_adapters[adapter_version]
+    adapter_info = all_adapters[adapter_version]
 
     native.http_file(
         name = name + "_reactor_adapter",

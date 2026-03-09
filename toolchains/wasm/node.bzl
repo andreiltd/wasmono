@@ -48,13 +48,19 @@ NodeReleaseInfo = provider(
 
 def _get_node_release(
         version: str,
-        platform: str) -> NodeReleaseInfo:
-    if not version in node_releases:
+        platform: str,
+        custom_releases: [None, dict] = None) -> NodeReleaseInfo:
+    all_releases = node_releases
+    if custom_releases != None:
+        all_releases = dict(node_releases)
+        all_releases.update(custom_releases)
+
+    if not version in all_releases:
         fail("Unknown Node.js release version '{}'. Available versions: {}".format(
             version,
-            ", ".join(node_releases.keys()),
+            ", ".join(all_releases.keys()),
         ))
-    ver = node_releases[version]
+    ver = all_releases[version]
     if not platform in ver:
         fail("Unsupported platform '{}'. Supported platforms: {}".format(
             platform,
@@ -150,6 +156,7 @@ node_distribution = rule(
 def download_node(
         name: str,
         version: str,
+        releases: [None, dict] = None,
         arch: [None, str] = None,
         os: [None, str] = None):
     """Download a prebuilt Node.js distribution and create a distribution target.
@@ -157,6 +164,8 @@ def download_node(
     Args:
         name: Target name for the node distribution.
         version: Node.js version to download (e.g. "20.18.0").
+        releases: Optional dict of custom releases to overlay on built-in
+            releases. Format: ``{"version": {"platform": {"url": "...", "shasum": "...", "prefix": "..."}}}``.
         arch: Override host architecture detection.
         os: Override host OS detection.
     """
@@ -166,7 +175,7 @@ def download_node(
         os = host_os()
 
     archive_name = name + "-archive"
-    release = _get_node_release(version, "{}-{}".format(arch, os))
+    release = _get_node_release(version, "{}-{}".format(arch, os), custom_releases = releases)
 
     native.http_archive(
         name = archive_name,

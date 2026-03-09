@@ -106,13 +106,19 @@ WasiSdkReleaseInfo = provider(
 
 def _get_wasi_sdk_release(
         version: str,
-        platform: str) -> WasiSdkReleaseInfo:
-    if not version in releases:
+        platform: str,
+        custom_releases: [None, dict] = None) -> WasiSdkReleaseInfo:
+    all_releases = releases
+    if custom_releases != None:
+        all_releases = dict(releases)
+        all_releases.update(custom_releases)
+
+    if not version in all_releases:
         fail("Unknown wasi-sdk release version '{}'. Available versions: {}".format(
             version,
-            ", ".join(releases.keys()),
+            ", ".join(all_releases.keys()),
         ))
-    wasi_version = releases[version]
+    wasi_version = all_releases[version]
     if not platform in wasi_version:
         fail("Unsupported platform '{}'. Supported platforms: {}".format(
             platform,
@@ -121,7 +127,7 @@ def _get_wasi_sdk_release(
     wasi_platform = wasi_version[platform]
     return WasiSdkReleaseInfo(
         version = version,
-        url = wasi_platform["tarball"],
+        url = wasi_platform["url"],
         sha256 = wasi_platform["shasum"],
     )
 
@@ -166,15 +172,26 @@ wasi_sdk_distribution = rule(
 def download_wasi_sdk(
         name: str,
         version: str,
+        releases: [None, dict] = None,
         arch: [None, str] = None,
         os: [None, str] = None):
+    """Download and setup WASI SDK distribution.
+
+    Args:
+        name: The name for the distribution target.
+        version: The WASI SDK version to download (e.g. "27.0").
+        releases: Optional dict of custom releases to overlay on built-in
+            releases. Format: ``{"version": {"platform": {"url": "...", "shasum": "..."}}}``.
+        arch: Target architecture (defaults to host architecture).
+        os: Target OS (defaults to host OS).
+    """
     if arch == None:
         arch = _WASI_SDK_ARCH_MAP[_host_arch()]
     if os == None:
         os = _host_os()
 
     archive_name = name + "-archive"
-    release = _get_wasi_sdk_release(version, "{}-{}".format(arch, os))
+    release = _get_wasi_sdk_release(version, "{}-{}".format(arch, os), custom_releases = releases)
 
     native.http_archive(
         name = archive_name,

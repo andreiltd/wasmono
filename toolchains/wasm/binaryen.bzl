@@ -58,13 +58,21 @@ BinaryenReleaseInfo = provider(
     },
 )
 
-def _get_binaryen_release(version: str, platform: str) -> BinaryenReleaseInfo:
-    if not version in binaryen_releases:
+def _get_binaryen_release(
+        version: str,
+        platform: str,
+        custom_releases: [None, dict] = None) -> BinaryenReleaseInfo:
+    all_releases = binaryen_releases
+    if custom_releases != None:
+        all_releases = dict(binaryen_releases)
+        all_releases.update(custom_releases)
+
+    if not version in all_releases:
         fail("Unknown Binaryen release version '{}'. Available versions: {}".format(
             version,
-            ", ".join(binaryen_releases.keys()),
+            ", ".join(all_releases.keys()),
         ))
-    release = binaryen_releases[version]
+    release = all_releases[version]
     if not platform in release:
         fail("Unsupported platform '{}'. Supported platforms: {}".format(
             platform,
@@ -129,15 +137,18 @@ binaryen_distribution = rule(
 def download_binaryen(
         name: str,
         version: str,
+        releases: [None, dict] = None,
         arch: [None, str] = None,
         os: [None, str] = None):
     """Download and setup Binaryen distribution.
 
     Args:
-        name: The name for the distribution target
-        version: The Binaryen version to download (e.g., "125")
-        arch: Target architecture (defaults to host architecture)
-        os: Target OS (defaults to host OS)
+        name: The name for the distribution target.
+        version: The Binaryen version to download (e.g., "125").
+        releases: Optional dict of custom releases to overlay on built-in
+            releases. Format: ``{"version": {"platform": {"url": "...", "shasum": "..."}}}``.
+        arch: Target architecture (defaults to host architecture).
+        os: Target OS (defaults to host OS).
     """
     if arch == None:
         arch = host_arch()
@@ -152,7 +163,7 @@ def download_binaryen(
     release_arch = "arm64" if arch == "aarch64" and os == "macos" else arch
 
     archive_name = name + "-archive"
-    release = _get_binaryen_release(version, "{}-{}".format(release_arch, os))
+    release = _get_binaryen_release(version, "{}-{}".format(release_arch, os), custom_releases = releases)
 
     native.http_archive(
         name = archive_name,

@@ -49,13 +49,19 @@ WevalReleaseInfo = provider(
 
 def _get_weval_release(
         version: str,
-        platform: str) -> WevalReleaseInfo:
-    if not version in weval_releases:
+        platform: str,
+        custom_releases: [None, dict] = None) -> WevalReleaseInfo:
+    all_releases = weval_releases
+    if custom_releases != None:
+        all_releases = dict(weval_releases)
+        all_releases.update(custom_releases)
+
+    if not version in all_releases:
         fail("Unknown weval release version '{}'. Available versions: {}".format(
             version,
-            ", ".join(weval_releases.keys()),
+            ", ".join(all_releases.keys()),
         ))
-    ver = weval_releases[version]
+    ver = all_releases[version]
     if not platform in ver:
         fail("Unsupported platform '{}'. Supported platforms: {}".format(
             platform,
@@ -120,16 +126,26 @@ weval_distribution = rule(
 def download_weval(
         name: str,
         version: str,
+        releases: [None, dict] = None,
         arch: [None, str] = None,
         os: [None, str] = None):
-    """Download a prebuilt weval CLI release and create a distribution target."""
+    """Download a prebuilt weval CLI release and create a distribution target.
+
+    Args:
+        name: The name for the distribution target.
+        version: The weval version to download.
+        releases: Optional dict of custom releases to overlay on built-in
+            releases. Format: ``{"version": {"platform": {"url": "...", "shasum": "..."}}}``.
+        arch: Target architecture (defaults to host architecture).
+        os: Target OS (defaults to host OS).
+    """
     if arch == None:
         arch = host_arch()
     if os == None:
         os = host_os()
 
     archive_name = name + "-archive"
-    release = _get_weval_release(version, "{}-{}".format(arch, os))
+    release = _get_weval_release(version, "{}-{}".format(arch, os), custom_releases = releases)
 
     native.http_archive(
         name = archive_name,

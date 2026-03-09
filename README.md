@@ -273,6 +273,51 @@ platform(
 load("@wasmono//toolchains/wasm:component.bzl", "wasm_component", "wasm_compose")
 ```
 
+## Custom Tool Releases
+
+By default, `download_*` functions and `wasm_demo_toolchains()` look up tool
+versions from the built-in release dictionaries shipped with wasmono. If you
+need a version that isn't included yet — or want to use a dev/nightly build —
+you can supply your own release data via the `releases` parameter.
+
+Custom releases **overlay** the built-in releases: entries you provide take
+precedence, while built-in versions remain available as fallback.
+
+### Example: Using a newer wasm-tools version
+
+Create a single releases file in your repo:
+
+```python
+# my_releases.bzl
+my_releases = {
+    "wasm_tools": {
+        "1.250.0": {
+            "x86_64-linux": {
+                "url": "<url>/wasm-tools-1.250.0-x86_64-linux.tar.gz",
+                "shasum": "<sha256>",
+            },
+            "aarch64-macos": {
+                "url": "<url>/wasm-tools-1.250.0-aarch64-macos.tar.gz",
+                "shasum": "<sha256>",
+            },
+            # ... add platforms you need
+        },
+    },
+}
+```
+
+Then pass it to `wasm_demo_toolchains()`:
+
+```python
+load(":my_releases.bzl", "my_releases")
+load("@wasmono//toolchains/wasm:demo.bzl", "wasm_demo_toolchains")
+
+wasm_demo_toolchains(
+    wasm_tools_version = "1.250.0",
+    releases = my_releases,
+)
+```
+
 ## Acknowledgments
 
 The http example is port of great p3 demo from https://github.com/ejrgilbert/component-interposition

@@ -61,7 +61,8 @@ def wasm_demo_toolchains(
         jco_version = "1.17.0",
         asc_version = None,
         # renovate: datasource=github-releases depName=bytecodealliance/weval
-        weval_version = None):
+        weval_version = None,
+        releases: [None, dict] = None):
     """Create WASM toolchain targets with sensible defaults.
 
     Note: `cxx_wasi` must be added separately — see module docstring.
@@ -81,22 +82,35 @@ def wasm_demo_toolchains(
             Only used when node_version is set. If None, asc is not installed.
         weval_version: Version of weval to download. If None, weval is not
             installed.
+        releases: Optional dict of custom releases keyed by tool name.
+            Overlays built-in releases (custom entries take precedence).
+            Keys: ``wasm_tools``, ``wasi_adapters``, ``wit_bindgen``, ``wac``,
+            ``wkg``, ``binaryen``, ``wasmtime``, ``node``, ``weval``.
+            Value format: ``{"version": {"platform": {"url": "...", "shasum": "..."}}}``.
     """
-    download_wasm_tools(name = "wasm_tools_dist", version = wasm_tools_version)
+    r = releases or {}
+
+    download_wasm_tools(name = "wasm_tools_dist", version = wasm_tools_version, releases = r.get("wasm_tools"), adapter_releases = r.get("wasi_adapters"))
     wasm_tools_toolchain(name = "wasm_tools", distribution = ":wasm_tools_dist", visibility = ["PUBLIC"])
 
-    download_wit_bindgen(name = "wit_bindgen_dist", version = wit_bindgen_version)
+    download_wit_bindgen(name = "wit_bindgen_dist", version = wit_bindgen_version, releases = r.get("wit_bindgen"))
     wit_bindgen_toolchain(name = "wit_bindgen", distribution = ":wit_bindgen_dist", visibility = ["PUBLIC"])
 
-    download_wac(name = "wac_dist", version = wac_version)
+    download_wac(name = "wac_dist", version = wac_version, releases = r.get("wac"))
     wac_toolchain(name = "wac", distribution = ":wac_dist", visibility = ["PUBLIC"])
 
-    download_wkg(name = "wkg_dist", version = wkg_version)
+    download_wkg(name = "wkg_dist", version = wkg_version, releases = r.get("wkg"))
     wkg_toolchain(name = "wkg", distribution = ":wkg_dist", visibility = ["PUBLIC"])
 
-    # jco — hermetic if node_version is set, otherwise system
+    download_binaryen(name = "binaryen_dist", version = binaryen_version, releases = r.get("binaryen"))
+    binaryen_toolchain(name = "binaryen", distribution = ":binaryen_dist", visibility = ["PUBLIC"])
+
+    download_wasmtime(name = "wasmtime_dist", version = wasmtime_version, releases = r.get("wasmtime"))
+    wasmtime_toolchain(name = "wasmtime", distribution = ":wasmtime_dist", visibility = ["PUBLIC"])
+
+    # jco hermetic if node_version is set, otherwise system
     if node_version != None:
-        download_node(name = "node_dist", version = node_version)
+        download_node(name = "node_dist", version = node_version, releases = r.get("node"))
         node_toolchain(name = "node", distribution = ":node_dist", visibility = ["PUBLIC"])
 
         install_jco(name = "jco_dist", version = jco_version, node = ":node_dist")
@@ -109,13 +123,8 @@ def wasm_demo_toolchains(
     else:
         system_jco_toolchain(name = "jco", visibility = ["PUBLIC"])
 
-    download_binaryen(name = "binaryen_dist", version = binaryen_version)
-    binaryen_toolchain(name = "binaryen", distribution = ":binaryen_dist", visibility = ["PUBLIC"])
-
-    download_wasmtime(name = "wasmtime_dist", version = wasmtime_version)
-    wasmtime_toolchain(name = "wasmtime", distribution = ":wasmtime_dist", visibility = ["PUBLIC"])
 
     # weval — optional, only when weval_version is explicitly set
     if weval_version != None:
-        download_weval(name = "weval_dist", version = weval_version)
+        download_weval(name = "weval_dist", version = weval_version, releases = r.get("weval"))
         weval_toolchain(name = "weval", distribution = ":weval_dist", visibility = ["PUBLIC"])

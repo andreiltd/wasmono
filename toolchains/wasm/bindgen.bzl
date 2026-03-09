@@ -59,13 +59,21 @@ WitBindgenReleaseInfo = provider(
     },
 )
 
-def _get_wit_bindgen_release(version: str, platform: str) -> WitBindgenReleaseInfo:
-    if not version in wit_bindgen_releases:
+def _get_wit_bindgen_release(
+        version: str,
+        platform: str,
+        custom_releases: [None, dict] = None) -> WitBindgenReleaseInfo:
+    all_releases = wit_bindgen_releases
+    if custom_releases != None:
+        all_releases = dict(wit_bindgen_releases)
+        all_releases.update(custom_releases)
+
+    if not version in all_releases:
         fail("Unknown wit-bindgen release version '{}'. Available versions: {}".format(
             version,
-            ", ".join(wit_bindgen_releases.keys()),
+            ", ".join(all_releases.keys()),
         ))
-    release = wit_bindgen_releases[version]
+    release = all_releases[version]
     if not platform in release:
         fail("Unsupported platform '{}'. Supported platforms: {}".format(
             platform,
@@ -131,15 +139,18 @@ wit_bindgen_distribution = rule(
 def download_wit_bindgen(
         name: str,
         version: str,
+        releases: [None, dict] = None,
         arch: [None, str] = None,
         os: [None, str] = None):
     """Download and setup wit-bindgen distribution.
 
     Args:
-        name: The name for the distribution target
-        version: The wit-bindgen version to download
-        arch: Target architecture (defaults to host architecture)
-        os: Target OS (defaults to host OS)
+        name: The name for the distribution target.
+        version: The wit-bindgen version to download.
+        releases: Optional dict of custom releases to overlay on built-in
+            releases. Format: ``{"version": {"platform": {"url": "...", "shasum": "..."}}}``.
+        arch: Target architecture (defaults to host architecture).
+        os: Target OS (defaults to host OS).
     """
     if arch == None:
         arch = host_arch()
@@ -147,7 +158,7 @@ def download_wit_bindgen(
         os = host_os()
 
     archive_name = name + "-archive"
-    release = _get_wit_bindgen_release(version, "{}-{}".format(arch, os))
+    release = _get_wit_bindgen_release(version, "{}-{}".format(arch, os), custom_releases = releases)
 
     native.http_archive(
         name = archive_name,

@@ -305,24 +305,6 @@ weval_releases = {
 }
 
 wasmtime_releases = {
-    "dev": {
-        "aarch64-linux": {
-            "shasum": "7bb1df7e4459ebfddfe059eeee468f3a76a2e5ef8d0860d1a4866baa984d2c51",
-            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/dev/wasmtime-dev-aarch64-linux.tar.xz",
-        },
-        "aarch64-macos": {
-            "shasum": "8c410c8526de00fc1b88773cfe034f2695b5609b02631bfd86966210c8020635",
-            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/dev/wasmtime-dev-aarch64-macos.tar.xz",
-        },
-        "x86_64-linux": {
-            "shasum": "db8b48b1433a8cd5a821fe0ae01208ae84d33cedf8ef82d191549e13d4d75d8f",
-            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/dev/wasmtime-dev-x86_64-linux.tar.xz",
-        },
-        "x86_64-macos": {
-            "shasum": "2bee9e9cd391513ba705de25af8e6d804eccafc16d1dfa2ac84cbe3a10c93709",
-            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/dev/wasmtime-dev-x86_64-macos.tar.xz",
-        },
-    },
     "42.0.1": {
         "aarch64-linux": {
             "shasum": "fa9b7e09f49f75c17acf2c018a4286cdbeffb4c1f3ee9e72c48b6a42c1deceda",

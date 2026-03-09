@@ -36,14 +36,22 @@ WacReleaseInfo = provider(
     doc = """WacReleaseInfo: Metadata for a specific prebuilt `wac` release asset.""",
 )
 
-def _get_wac_release(version: str, platform: str) -> WacReleaseInfo:
-    if not version in wac_releases:
+def _get_wac_release(
+        version: str,
+        platform: str,
+        custom_releases: [None, dict] = None) -> WacReleaseInfo:
+    all_releases = wac_releases
+    if custom_releases != None:
+        all_releases = dict(wac_releases)
+        all_releases.update(custom_releases)
+
+    if not version in all_releases:
         fail("Unknown wac release version '{}'. Available versions: {}".format(
             version,
-            ", ".join(wac_releases.keys()),
+            ", ".join(all_releases.keys()),
         ))
 
-    ver = wac_releases[version]
+    ver = all_releases[version]
     if not platform in ver:
         fail("Unsupported platform '{}'. Supported platforms: {}".format(
             platform,
@@ -101,18 +109,28 @@ wac_distribution = rule(
     },
 )
 
-def download_wac(name: str, version: str, arch: [None, str] = None, os: [None, str] = None):
-    """
-    Download and register a prebuilt `wac` CLI release as a local distribution and
-    create a `wac_distribution` target that exposes the binary and metadata.
-    """
+def download_wac(
+        name: str,
+        version: str,
+        releases: [None, dict] = None,
+        arch: [None, str] = None,
+        os: [None, str] = None):
+    """Download and register a prebuilt `wac` CLI release as a local distribution.
 
+    Args:
+        name: The name for the distribution target.
+        version: The wac version to download.
+        releases: Optional dict of custom releases to overlay on built-in
+            releases. Format: ``{"version": {"platform": {"url": "...", "shasum": "..."}}}``.
+        arch: Target architecture (defaults to host architecture).
+        os: Target OS (defaults to host OS).
+    """
     if arch == None:
         arch = host_arch()
     if os == None:
         os = host_os(_WAC_OS_MAP)
 
-    release = _get_wac_release(version, "{}-{}".format(arch, os))
+    release = _get_wac_release(version, "{}-{}".format(arch, os), custom_releases = releases)
 
     # fetch the raw binary asset
     native.http_file(

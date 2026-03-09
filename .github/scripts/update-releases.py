@@ -128,7 +128,7 @@ TOOLS = {
     "wasi-sdk": {
         "file": "toolchains/cxx/wasi/releases.bzl",
         "dict_name": "releases",
-        "url_key": "tarball",
+        "url_key": "url",
         "platforms": {
             "arm64-linux": "arm64-linux",
             "arm64-macos": "arm64-macos",

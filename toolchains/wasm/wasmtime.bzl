@@ -56,13 +56,19 @@ WasmtimeReleaseInfo = provider(
 
 def _get_wasmtime_release(
         version: str,
-        platform: str) -> WasmtimeReleaseInfo:
-    if not version in wasmtime_releases:
+        platform: str,
+        custom_releases: [None, dict] = None) -> WasmtimeReleaseInfo:
+    all_releases = wasmtime_releases
+    if custom_releases != None:
+        all_releases = dict(wasmtime_releases)
+        all_releases.update(custom_releases)
+
+    if not version in all_releases:
         fail("Unknown wasmtime release version '{}'. Available versions: {}".format(
             version,
-            ", ".join(wasmtime_releases.keys()),
+            ", ".join(all_releases.keys()),
         ))
-    ver = wasmtime_releases[version]
+    ver = all_releases[version]
     if not platform in ver:
         fail("Unsupported platform '{}'. Supported platforms: {}".format(
             platform,
@@ -127,16 +133,28 @@ wasmtime_distribution = rule(
 def download_wasmtime(
         name: str,
         version: str,
+        releases: [None, dict] = None,
         arch: [None, str] = None,
         os: [None, str] = None):
-    """Download a prebuilt wasmtime CLI release and create a distribution target."""
+    """Download a prebuilt wasmtime CLI release and create a distribution target.
+
+    Args:
+        name: The name for the distribution target.
+        version: The wasmtime version to download.
+        releases: Optional dict of custom releases to overlay on built-in
+            releases. Format: ``{"version": {"platform": {"url": "...", "shasum": "..."}}}``.
+            This can be used to supply dev/nightly builds or versions not yet
+            in the built-in release list.
+        arch: Target architecture (defaults to host architecture).
+        os: Target OS (defaults to host OS).
+    """
     if arch == None:
         arch = host_arch()
     if os == None:
         os = host_os()
 
     archive_name = name + "-archive"
-    release = _get_wasmtime_release(version, "{}-{}".format(arch, os))
+    release = _get_wasmtime_release(version, "{}-{}".format(arch, os), custom_releases = releases)
 
     native.http_archive(
         name = archive_name,
