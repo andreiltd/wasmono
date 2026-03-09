@@ -3,6 +3,7 @@ root = .
 prelude = prelude
 toolchains = toolchains
 none = none
+wasmono = .
 
 [cell_aliases]
 config = prelude

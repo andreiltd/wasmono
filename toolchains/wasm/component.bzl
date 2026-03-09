@@ -1263,34 +1263,15 @@ def _wasm_test_impl(ctx: AnalysisContext) -> list[Provider]:
     cmd = _build_wasmtime_cmd(wasmtime_info, component_file, ctx.attrs)
 
     expected = ctx.attrs.expected_exit_code
-    if expected != 0:
-        is_windows = ctx.attrs._exec_os_type[OsLookup].os == "windows"
-        if is_windows:
-            wrapper, _ = ctx.actions.write(
-                ctx.actions.declare_output("test_wrapper.bat"),
-                [
-                    "@echo off",
-                    cmd_args(cmd, delimiter = " ", quote = "shell"),
-                    "set exit_code=%ERRORLEVEL%",
-                    "if %exit_code% equ {} exit /b 0".format(expected),
-                    "echo expected exit code {}, got %exit_code% 1>&2".format(expected),
-                    "exit /b 1",
-                ],
-                allow_args = True,
-            )
-        else:
-            wrapper, _ = ctx.actions.write(
-                ctx.actions.declare_output("test_wrapper.sh"),
-                [
-                    "#!/usr/bin/env bash",
-                    cmd_args(cmd, delimiter = " ", quote = "shell"),
-                    "exit_code=$?",
-                    "if [ \"$exit_code\" -eq {} ]; then exit 0; else echo \"expected exit code {}, got $exit_code\" >&2; exit 1; fi".format(expected, expected),
-                ],
-                is_executable = True,
-                allow_args = True,
-            )
-        test_cmd = cmd_args(wrapper, hidden = [cmd])
+    needs_wrapper = expected != 0 or (ctx.attrs.isolate_dirs and len(ctx.attrs.wasi_dirs) > 0)
+
+    if needs_wrapper:
+        wrapper_cmd = cmd_args("python3", ctx.attrs._test_wrapper)
+        wrapper_cmd.add("--expected-exit-code", str(expected))
+        wrapper_cmd.add(cmd_args([cmd_args("--isolate-dir", d) for d in ctx.attrs.wasi_dirs]))
+        wrapper_cmd.add("--")
+        wrapper_cmd.add(cmd)
+        test_cmd = wrapper_cmd
     else:
         test_cmd = cmd
 
@@ -1313,6 +1294,13 @@ wasm_test = rule(
         "expected_exit_code": attrs.int(
             default = 0,
             doc = "Expected exit code from wasmtime. Test passes when the exit code matches.",
+        ),
+        "isolate_dirs": attrs.bool(
+            default = False,
+            doc = "Copy wasi_dirs to a temp directory before running, ensuring test isolation.",
+        ),
+        "_test_wrapper": attrs.source(
+            default = "wasmono//tools:test_wrapper",
         ),
     }, **_WASMTIME_COMMON_ATTRS),
     doc = "Tests a WASM component by running it with 'wasmtime run' and checking exit code. Use with 'buck2 test'.",

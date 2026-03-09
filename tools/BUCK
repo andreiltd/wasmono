@@ -1,0 +1,5 @@
+export_file(
+    name = "test_wrapper",
+    src = "test_wrapper.py",
+    visibility = ["PUBLIC"],
+)
