@@ -1,0 +1,6 @@
+# Use raw-dylib linking on Windows, which generates DLL imports directly
+# without needing .lib import libraries from windows_x86_64_msvc.
+# Supported since Rust 1.65+ on x86_64-pc-windows-msvc.
+rustc_flags = ["--cfg=windows_raw_dylib"]
+# v0.53+ delegates to windows-link crate when windows_raw_dylib is set
+extra_deps = [":windows-link-0.2.1"]

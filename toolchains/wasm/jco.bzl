@@ -33,11 +33,17 @@ system_jco_toolchain(name = "jco", visibility = ["PUBLIC"])
 
 load(
     "@prelude//os_lookup:defs.bzl",
+    "Os",
+    "OsLookup",
     "ScriptLanguage",
 )
 load(
     "@prelude//utils:cmd_script.bzl",
     "cmd_script",
+)
+load(
+    "@prelude//decls:common.bzl",
+    buck = "buck",
 )
 load(
     ":node.bzl",
@@ -57,18 +63,20 @@ JcoInfo = provider(
 # ---------------------------------------------------------------------------
 
 def _system_jco_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
+    lang = ctx.attrs._exec_os_type[OsLookup].script
+
     jco = cmd_script(
         actions = ctx.actions,
         name = "jco",
         cmd = cmd_args("jco"),
-        language = ScriptLanguage("sh"),
+        language = lang,
     )
 
     componentize = cmd_script(
         actions = ctx.actions,
         name = "jco_componentize",
         cmd = cmd_args("jco", "componentize"),
-        language = ScriptLanguage("sh"),
+        language = lang,
     )
 
     return [
@@ -80,7 +88,9 @@ def _system_jco_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
 
 system_jco_toolchain = rule(
     impl = _system_jco_toolchain_impl,
-    attrs = {},
+    attrs = {
+        "_exec_os_type": buck.exec_os_type_arg(),
+    },
     is_toolchain_rule = True,
     doc = "System jco toolchain (requires jco on PATH via npm install -g @bytecodealliance/jco)",
 )
@@ -148,6 +158,7 @@ def install_jco(
 def _jco_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
     node_info = ctx.attrs._node_toolchain[NodeInfo]
     jco_dist = ctx.attrs.distribution[DefaultInfo].default_outputs[0]
+    lang = ctx.attrs._exec_os_type[OsLookup].script
 
     # Create a wrapper script: node <jco_workspace>/node_modules/.bin/jco componentize ...
     jco_path = cmd_args(
@@ -159,7 +170,7 @@ def _jco_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
         actions = ctx.actions,
         name = "jco_componentize",
         cmd = cmd_args(node_info.node, jco_path, "componentize"),
-        language = ScriptLanguage("sh"),
+        language = lang,
     )
 
     return [
@@ -179,6 +190,7 @@ jco_toolchain = rule(
             default = "toolchains//:node",
             providers = [NodeInfo],
         ),
+        "_exec_os_type": buck.exec_os_type_arg(),
     },
     is_toolchain_rule = True,
     doc = "Hermetic jco toolchain using downloaded Node.js + npm-installed jco",

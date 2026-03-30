@@ -97,14 +97,11 @@ WitBindgenDistributionInfo = provider(
 
 def _wit_bindgen_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
     # Create a copy of the wit-bindgen binary for easy access
-    dst = ctx.actions.declare_output("wit-bindgen")
+    dst = ctx.actions.declare_output("wit-bindgen" + ctx.attrs.suffix)
     dist_output = ctx.attrs.dist[DefaultInfo].default_outputs[0]
-    src = cmd_args(dist_output, format = "{{}}/{}".format(ctx.attrs.prefix + "/wit-bindgen" + ctx.attrs.suffix))
+    src = dist_output.project(ctx.attrs.prefix + "/wit-bindgen" + ctx.attrs.suffix)
 
-    ctx.actions.run(
-        ["cp", src, dst.as_output()],
-        category = "cp_wit_bindgen",
-    )
+    ctx.actions.copy_file(dst.as_output(), src)
 
     wit_bindgen = cmd_args(
         [dst],

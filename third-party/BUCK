@@ -2,7 +2,6 @@
 
 load("@prelude//rust:cargo_buildscript.bzl", "buildscript_run")
 load("@prelude//rust:cargo_package.bzl", "cargo")
-load("//third-party/macros:rust_third_party.bzl", "third_party_rust_cxx_library", "third_party_rust_prebuilt_cxx_library")
 
 http_archive(
     name = "addr2line-0.26.0.crate",
@@ -378,13 +377,10 @@ cargo.rust_library(
                 ":rustix-linux-procfs-0.1.1",
             ],
         ),
-        "macos": dict(
-            deps = [":rustix-1.1.3"],
-        ),
         "macos-arm64": dict(
             deps = [":rustix-1.1.3"],
         ),
-        "wasi-wasm32": dict(
+        "macos-x86_64": dict(
             deps = [":rustix-1.1.3"],
         ),
         "windows-gnu": dict(
@@ -458,13 +454,10 @@ cargo.rust_library(
         "linux-x86_64": dict(
             deps = [":rustix-1.1.3"],
         ),
-        "macos": dict(
-            deps = [":rustix-1.1.3"],
-        ),
         "macos-arm64": dict(
             deps = [":rustix-1.1.3"],
         ),
-        "wasi-wasm32": dict(
+        "macos-x86_64": dict(
             deps = [":rustix-1.1.3"],
         ),
     },
@@ -497,13 +490,10 @@ cargo.rust_library(
         "linux-x86_64": dict(
             deps = [":rustix-1.1.3"],
         ),
-        "macos": dict(
-            deps = [":rustix-1.1.3"],
-        ),
         "macos-arm64": dict(
             deps = [":rustix-1.1.3"],
         ),
-        "wasi-wasm32": dict(
+        "macos-x86_64": dict(
             deps = [":rustix-1.1.3"],
         ),
         "windows-gnu": dict(
@@ -549,10 +539,10 @@ cargo.rust_library(
         "linux-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos": dict(
+        "macos-arm64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos-arm64": dict(
+        "macos-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
     },
@@ -1289,10 +1279,10 @@ cargo.rust_library(
         "linux-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos": dict(
+        "macos-arm64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos-arm64": dict(
+        "macos-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
         "windows-gnu": dict(
@@ -1404,10 +1394,10 @@ cargo.rust_library(
     edition = "2018",
     features = ["std"],
     platform = {
-        "macos": dict(
+        "macos-arm64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos-arm64": dict(
+        "macos-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
         "windows-gnu": dict(
@@ -1595,13 +1585,10 @@ cargo.rust_library(
         "linux-x86_64": dict(
             deps = [":rustix-1.1.3"],
         ),
-        "macos": dict(
-            deps = [":rustix-1.1.3"],
-        ),
         "macos-arm64": dict(
             deps = [":rustix-1.1.3"],
         ),
-        "wasi-wasm32": dict(
+        "macos-x86_64": dict(
             deps = [":rustix-1.1.3"],
         ),
         "windows-gnu": dict(
@@ -1922,10 +1909,10 @@ cargo.rust_library(
         "linux-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos": dict(
+        "macos-arm64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos-arm64": dict(
+        "macos-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
     },
@@ -1973,10 +1960,10 @@ cargo.rust_library(
         "linux-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos": dict(
+        "macos-arm64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos-arm64": dict(
+        "macos-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
     },
@@ -2287,10 +2274,10 @@ cargo.rust_library(
     crate_root = "iana-time-zone-0.1.65.crate/src/lib.rs",
     edition = "2021",
     platform = {
-        "macos": dict(
+        "macos-arm64": dict(
             deps = [":core-foundation-sys-0.8.7"],
         ),
-        "macos-arm64": dict(
+        "macos-x86_64": dict(
             deps = [":core-foundation-sys-0.8.7"],
         ),
         "windows-gnu": dict(
@@ -2735,7 +2722,7 @@ cargo.rust_library(
     deps = [":ittapi-sys-0.4.0-ittapi"],
 )
 
-third_party_rust_cxx_library(
+cxx_library(
     name = "ittapi-sys-0.4.0-ittapi",
     srcs = [
         ":ittapi-sys-0.4.0.crate[c-library/src/ittnotify/ittnotify_static.c]",
@@ -2770,10 +2757,10 @@ cargo.rust_library(
         "linux-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos": dict(
+        "macos-arm64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos-arm64": dict(
+        "macos-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
         "windows-gnu": dict(
@@ -2831,13 +2818,10 @@ cargo.rust_library(
         "linux-x86_64": dict(
             features = ["extra_traits"],
         ),
-        "macos": dict(
-            features = ["extra_traits"],
-        ),
         "macos-arm64": dict(
             features = ["extra_traits"],
         ),
-        "wasi-wasm32": dict(
+        "macos-x86_64": dict(
             features = ["extra_traits"],
         ),
     },
@@ -2862,13 +2846,10 @@ cargo.rust_binary(
         "linux-x86_64": dict(
             features = ["extra_traits"],
         ),
-        "macos": dict(
-            features = ["extra_traits"],
-        ),
         "macos-arm64": dict(
             features = ["extra_traits"],
         ),
-        "wasi-wasm32": dict(
+        "macos-x86_64": dict(
             features = ["extra_traits"],
         ),
     },
@@ -2890,13 +2871,10 @@ buildscript_run(
         "linux-x86_64": dict(
             features = ["extra_traits"],
         ),
-        "macos": dict(
-            features = ["extra_traits"],
-        ),
         "macos-arm64": dict(
             features = ["extra_traits"],
         ),
-        "wasi-wasm32": dict(
+        "macos-x86_64": dict(
             features = ["extra_traits"],
         ),
     },
@@ -3118,10 +3096,10 @@ cargo.rust_library(
         "linux-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos": dict(
+        "macos-arm64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos-arm64": dict(
+        "macos-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
         "windows-gnu": dict(
@@ -3509,10 +3487,10 @@ cargo.rust_library(
         "linux-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos": dict(
+        "macos-arm64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos-arm64": dict(
+        "macos-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
     },
@@ -3852,19 +3830,13 @@ cargo.rust_library(
         "linux-x86_64": dict(
             deps = [":linux-raw-sys-0.4.15"],
         ),
-        "macos": dict(
-            named_deps = {
-                "libc_errno": ":errno-0.3.14",
-            },
-            deps = [":libc-0.2.182"],
-        ),
         "macos-arm64": dict(
             named_deps = {
                 "libc_errno": ":errno-0.3.14",
             },
             deps = [":libc-0.2.182"],
         ),
-        "wasi-wasm32": dict(
+        "macos-x86_64": dict(
             named_deps = {
                 "libc_errno": ":errno-0.3.14",
             },
@@ -3930,13 +3902,13 @@ cargo.rust_library(
     features = [
         "alloc",
         "default",
+        "event",
         "net",
         "std",
     ],
     platform = {
         "linux-arm64": dict(
             features = [
-                "event",
                 "fs",
                 "mm",
                 "param",
@@ -3949,7 +3921,6 @@ cargo.rust_library(
         ),
         "linux-x86_64": dict(
             features = [
-                "event",
                 "fs",
                 "mm",
                 "param",
@@ -3960,25 +3931,8 @@ cargo.rust_library(
             ],
             deps = [":linux-raw-sys-0.11.0"],
         ),
-        "macos": dict(
-            features = [
-                "event",
-                "fs",
-                "mm",
-                "param",
-                "process",
-                "termios",
-                "thread",
-                "time",
-            ],
-            named_deps = {
-                "libc_errno": ":errno-0.3.14",
-            },
-            deps = [":libc-0.2.182"],
-        ),
         "macos-arm64": dict(
             features = [
-                "event",
                 "fs",
                 "mm",
                 "param",
@@ -3992,11 +3946,14 @@ cargo.rust_library(
             },
             deps = [":libc-0.2.182"],
         ),
-        "wasi-wasm32": dict(
+        "macos-x86_64": dict(
             features = [
                 "fs",
+                "mm",
+                "param",
                 "process",
                 "termios",
+                "thread",
                 "time",
             ],
             named_deps = {
@@ -4005,14 +3962,12 @@ cargo.rust_library(
             deps = [":libc-0.2.182"],
         ),
         "windows-gnu": dict(
-            features = ["event"],
             named_deps = {
                 "libc_errno": ":errno-0.3.14",
             },
             deps = [":windows-sys-0.61.2"],
         ),
         "windows-msvc": dict(
-            features = ["event"],
             named_deps = {
                 "libc_errno": ":errno-0.3.14",
             },
@@ -4033,13 +3988,13 @@ cargo.rust_binary(
     features = [
         "alloc",
         "default",
+        "event",
         "net",
         "std",
     ],
     platform = {
         "linux-arm64": dict(
             features = [
-                "event",
                 "fs",
                 "mm",
                 "param",
@@ -4051,19 +4006,6 @@ cargo.rust_binary(
         ),
         "linux-x86_64": dict(
             features = [
-                "event",
-                "fs",
-                "mm",
-                "param",
-                "process",
-                "termios",
-                "thread",
-                "time",
-            ],
-        ),
-        "macos": dict(
-            features = [
-                "event",
                 "fs",
                 "mm",
                 "param",
@@ -4075,7 +4017,6 @@ cargo.rust_binary(
         ),
         "macos-arm64": dict(
             features = [
-                "event",
                 "fs",
                 "mm",
                 "param",
@@ -4085,19 +4026,16 @@ cargo.rust_binary(
                 "time",
             ],
         ),
-        "wasi-wasm32": dict(
+        "macos-x86_64": dict(
             features = [
                 "fs",
+                "mm",
+                "param",
                 "process",
                 "termios",
+                "thread",
                 "time",
             ],
-        ),
-        "windows-gnu": dict(
-            features = ["event"],
-        ),
-        "windows-msvc": dict(
-            features = ["event"],
         ),
     },
     visibility = [],
@@ -4110,13 +4048,13 @@ buildscript_run(
     features = [
         "alloc",
         "default",
+        "event",
         "net",
         "std",
     ],
     platform = {
         "linux-arm64": dict(
             features = [
-                "event",
                 "fs",
                 "mm",
                 "param",
@@ -4128,19 +4066,6 @@ buildscript_run(
         ),
         "linux-x86_64": dict(
             features = [
-                "event",
-                "fs",
-                "mm",
-                "param",
-                "process",
-                "termios",
-                "thread",
-                "time",
-            ],
-        ),
-        "macos": dict(
-            features = [
-                "event",
                 "fs",
                 "mm",
                 "param",
@@ -4152,7 +4077,6 @@ buildscript_run(
         ),
         "macos-arm64": dict(
             features = [
-                "event",
                 "fs",
                 "mm",
                 "param",
@@ -4162,19 +4086,16 @@ buildscript_run(
                 "time",
             ],
         ),
-        "wasi-wasm32": dict(
+        "macos-x86_64": dict(
             features = [
                 "fs",
+                "mm",
+                "param",
                 "process",
                 "termios",
+                "thread",
                 "time",
             ],
-        ),
-        "windows-gnu": dict(
-            features = ["event"],
-        ),
-        "windows-msvc": dict(
-            features = ["event"],
         ),
     },
     version = "1.1.3",
@@ -4613,29 +4534,10 @@ cargo.rust_library(
         "default",
         "std",
     ],
-    platform = {
-        "linux-arm64": dict(
-            deps = [":cpufeatures-0.2.17"],
-        ),
-        "linux-x86_64": dict(
-            deps = [":cpufeatures-0.2.17"],
-        ),
-        "macos": dict(
-            deps = [":cpufeatures-0.2.17"],
-        ),
-        "macos-arm64": dict(
-            deps = [":cpufeatures-0.2.17"],
-        ),
-        "windows-gnu": dict(
-            deps = [":cpufeatures-0.2.17"],
-        ),
-        "windows-msvc": dict(
-            deps = [":cpufeatures-0.2.17"],
-        ),
-    },
     visibility = [],
     deps = [
         ":cfg-if-1.0.4",
+        ":cpufeatures-0.2.17",
         ":digest-0.10.7",
     ],
 )
@@ -4753,10 +4655,10 @@ cargo.rust_library(
         "linux-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos": dict(
+        "macos-arm64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos-arm64": dict(
+        "macos-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
         "windows-gnu": dict(
@@ -4877,13 +4779,10 @@ cargo.rust_library(
         "linux-x86_64": dict(
             deps = [":rustix-0.38.44"],
         ),
-        "macos": dict(
-            deps = [":rustix-0.38.44"],
-        ),
         "macos-arm64": dict(
             deps = [":rustix-0.38.44"],
         ),
-        "wasi-wasm32": dict(
+        "macos-x86_64": dict(
             deps = [":rustix-0.38.44"],
         ),
         "windows-gnu": dict(
@@ -4971,45 +4870,28 @@ cargo.rust_library(
     ],
     platform = {
         "linux-arm64": dict(
-            deps = [
-                ":getrandom-0.4.1",
-                ":rustix-1.1.3",
-            ],
+            deps = [":rustix-1.1.3"],
         ),
         "linux-x86_64": dict(
-            deps = [
-                ":getrandom-0.4.1",
-                ":rustix-1.1.3",
-            ],
-        ),
-        "macos": dict(
-            deps = [
-                ":getrandom-0.4.1",
-                ":rustix-1.1.3",
-            ],
+            deps = [":rustix-1.1.3"],
         ),
         "macos-arm64": dict(
-            deps = [
-                ":getrandom-0.4.1",
-                ":rustix-1.1.3",
-            ],
+            deps = [":rustix-1.1.3"],
+        ),
+        "macos-x86_64": dict(
+            deps = [":rustix-1.1.3"],
         ),
         "windows-gnu": dict(
-            deps = [
-                ":getrandom-0.4.1",
-                ":windows-sys-0.61.2",
-            ],
+            deps = [":windows-sys-0.61.2"],
         ),
         "windows-msvc": dict(
-            deps = [
-                ":getrandom-0.4.1",
-                ":windows-sys-0.61.2",
-            ],
+            deps = [":windows-sys-0.61.2"],
         ),
     },
     visibility = [],
     deps = [
         ":fastrand-2.3.0",
+        ":getrandom-0.4.1",
         ":once_cell-1.21.3",
     ],
 )
@@ -5187,10 +5069,10 @@ cargo.rust_library(
         "linux-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos": dict(
+        "macos-arm64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos-arm64": dict(
+        "macos-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
         "windows-gnu": dict(
@@ -5829,7 +5711,6 @@ http_archive(
     name = "wasmtime-42.0.1.crate",
     sha256 = "39bef52be4fb4c5b47d36f847172e896bc94b35c9c6a6f07117686bd16ed89a7",
     strip_prefix = "wasmtime-42.0.1",
-    sub_targets = ["src/runtime/vm/helpers.c"],
     urls = ["https://static.crates.io/crates/wasmtime/42.0.1/download"],
     visibility = [],
 )
@@ -5904,15 +5785,15 @@ cargo.rust_library(
                 ":rustix-1.1.3",
             ],
         ),
-        "macos": dict(
+        "macos-arm64": dict(
             deps = [
-                ":ittapi-0.4.0",
                 ":mach2-0.4.3",
                 ":rustix-1.1.3",
             ],
         ),
-        "macos-arm64": dict(
+        "macos-x86_64": dict(
             deps = [
+                ":ittapi-0.4.0",
                 ":mach2-0.4.3",
                 ":rustix-1.1.3",
             ],
@@ -5960,7 +5841,6 @@ cargo.rust_library(
         ":wasm-compose-0.244.0",
         ":wasm-encoder-0.244.0",
         ":wasmparser-0.244.0",
-        ":wasmtime-42.0.1-wasmtime-helpers",
         ":wasmtime-environ-42.0.1",
         ":wat-1.245.1",
     ],
@@ -6057,18 +5937,9 @@ buildscript_run(
         "wasmtime-jit-icache-coherence",
         "wat",
     ],
+    rustc_link_lib = True,
+    rustc_link_search = True,
     version = "42.0.1",
-)
-
-third_party_rust_cxx_library(
-    name = "wasmtime-42.0.1-wasmtime-helpers",
-    srcs = [":wasmtime-42.0.1.crate[src/runtime/vm/helpers.c]"],
-    headers = [],
-    compiler_flags = [
-        "-DVERSIONED_SUFFIX=_42_0_1",
-        "-DFEATURE_DEBUG_BUILTINS",
-    ],
-    visibility = [],
 )
 
 http_archive(
@@ -6164,13 +6035,10 @@ cargo.rust_library(
         "linux-x86_64": dict(
             deps = [":rustix-1.1.3"],
         ),
-        "macos": dict(
-            deps = [":rustix-1.1.3"],
-        ),
         "macos-arm64": dict(
             deps = [":rustix-1.1.3"],
         ),
-        "wasi-wasm32": dict(
+        "macos-x86_64": dict(
             deps = [":rustix-1.1.3"],
         ),
         "windows-gnu": dict(
@@ -6340,79 +6208,16 @@ cargo.rust_library(
     crate = "wasmtime_internal_core",
     crate_root = "wasmtime-internal-core-42.0.1.crate/src/lib.rs",
     edition = "2024",
-    env = {
-        "CARGO_CRATE_NAME": "wasmtime_internal_core",
-        "CARGO_MANIFEST_DIR": "wasmtime-internal-core-42.0.1.crate",
-        "CARGO_PKG_AUTHORS": "The Wasmtime Project Developers",
-        "CARGO_PKG_DESCRIPTION": "INTERNAL: Wasmtime's core utilities and helpers with minimal dependencies",
-        "CARGO_PKG_NAME": "wasmtime-internal-core",
-        "CARGO_PKG_REPOSITORY": "",
-        "CARGO_PKG_VERSION": "42.0.1",
-        "CARGO_PKG_VERSION_MAJOR": "42",
-        "CARGO_PKG_VERSION_MINOR": "0",
-        "CARGO_PKG_VERSION_PATCH": "1",
-        "CARGO_PKG_VERSION_PRE": "",
-        "OUT_DIR": "$(location :wasmtime-internal-core-42.0.1-build-script-run[out_dir])",
-    },
     features = [
         "anyhow",
         "backtrace",
         "std",
     ],
-    rustc_flags = ["@$(location :wasmtime-internal-core-42.0.1-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
         ":anyhow-1.0.101",
         ":libm-0.2.16",
     ],
-)
-
-cargo.rust_binary(
-    name = "wasmtime-internal-core-42.0.1-build-script-build",
-    srcs = [":wasmtime-internal-core-42.0.1.crate"],
-    crate = "build_script_build",
-    crate_root = "wasmtime-internal-core-42.0.1.crate/build.rs",
-    edition = "2024",
-    env = {
-        "CARGO_CRATE_NAME": "build_script_build",
-        "CARGO_MANIFEST_DIR": "wasmtime-internal-core-42.0.1.crate",
-        "CARGO_PKG_AUTHORS": "The Wasmtime Project Developers",
-        "CARGO_PKG_DESCRIPTION": "INTERNAL: Wasmtime's core utilities and helpers with minimal dependencies",
-        "CARGO_PKG_NAME": "wasmtime-internal-core",
-        "CARGO_PKG_REPOSITORY": "",
-        "CARGO_PKG_VERSION": "42.0.1",
-        "CARGO_PKG_VERSION_MAJOR": "42",
-        "CARGO_PKG_VERSION_MINOR": "0",
-        "CARGO_PKG_VERSION_PATCH": "1",
-        "CARGO_PKG_VERSION_PRE": "",
-    },
-    features = [
-        "anyhow",
-        "backtrace",
-        "std",
-    ],
-    visibility = [],
-)
-
-buildscript_run(
-    name = "wasmtime-internal-core-42.0.1-build-script-run",
-    package_name = "wasmtime-internal-core",
-    buildscript_rule = ":wasmtime-internal-core-42.0.1-build-script-build",
-    env = {
-        "CARGO_PKG_AUTHORS": "The Wasmtime Project Developers",
-        "CARGO_PKG_DESCRIPTION": "INTERNAL: Wasmtime's core utilities and helpers with minimal dependencies",
-        "CARGO_PKG_REPOSITORY": "",
-        "CARGO_PKG_VERSION_MAJOR": "42",
-        "CARGO_PKG_VERSION_MINOR": "0",
-        "CARGO_PKG_VERSION_PATCH": "1",
-        "CARGO_PKG_VERSION_PRE": "",
-    },
-    features = [
-        "anyhow",
-        "backtrace",
-        "std",
-    ],
-    version = "42.0.1",
 )
 
 http_archive(
@@ -6478,6 +6283,9 @@ cargo.rust_library(
     crate = "wasmtime_internal_fiber",
     crate_root = "wasmtime-internal-fiber-42.0.1.crate/src/lib.rs",
     edition = "2024",
+    env = {
+        "OUT_DIR": "$(location :wasmtime-internal-fiber-42.0.1-build-script-run[out_dir])",
+    },
     features = ["std"],
     named_deps = {
         "wasmtime_versioned_export_macros": ":wasmtime-internal-versioned-export-macros-42.0.1",
@@ -6495,13 +6303,13 @@ cargo.rust_library(
                 ":rustix-1.1.3",
             ],
         ),
-        "macos": dict(
+        "macos-arm64": dict(
             deps = [
                 ":libc-0.2.182",
                 ":rustix-1.1.3",
             ],
         ),
-        "macos-arm64": dict(
+        "macos-x86_64": dict(
             deps = [
                 ":libc-0.2.182",
                 ":rustix-1.1.3",
@@ -6514,6 +6322,7 @@ cargo.rust_library(
             deps = [":windows-sys-0.61.2"],
         ),
     },
+    rustc_flags = ["@$(location :wasmtime-internal-fiber-42.0.1-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
         ":cfg-if-1.0.4",
@@ -6521,11 +6330,37 @@ cargo.rust_library(
     ],
 )
 
+cargo.rust_binary(
+    name = "wasmtime-internal-fiber-42.0.1-build-script-build",
+    srcs = [":wasmtime-internal-fiber-42.0.1.crate"],
+    crate = "build_script_build",
+    crate_root = "wasmtime-internal-fiber-42.0.1.crate/build.rs",
+    edition = "2024",
+    features = ["std"],
+    named_deps = {
+        "wasmtime_versioned_export_macros": ":wasmtime-internal-versioned-export-macros-42.0.1",
+    },
+    visibility = [],
+    deps = [":cc-1.2.56"],
+)
+
+buildscript_run(
+    name = "wasmtime-internal-fiber-42.0.1-build-script-run",
+    package_name = "wasmtime-internal-fiber",
+    buildscript_rule = ":wasmtime-internal-fiber-42.0.1-build-script-build",
+    env = {
+        "OPT_LEVEL": "3",
+    },
+    features = ["std"],
+    rustc_link_lib = True,
+    rustc_link_search = True,
+    version = "42.0.1",
+)
+
 http_archive(
     name = "wasmtime-internal-jit-debug-42.0.1.crate",
     sha256 = "924980c50427885fd4feed2049b88380178e567768aaabf29045b02eb262eaa7",
     strip_prefix = "wasmtime-internal-jit-debug-42.0.1",
-    sub_targets = ["gdbjit.c"],
     urls = ["https://static.crates.io/crates/wasmtime-internal-jit-debug/42.0.1/download"],
     visibility = [],
 )
@@ -6536,6 +6371,9 @@ cargo.rust_library(
     crate = "wasmtime_internal_jit_debug",
     crate_root = "wasmtime-internal-jit-debug-42.0.1.crate/src/lib.rs",
     edition = "2024",
+    env = {
+        "OUT_DIR": "$(location :wasmtime-internal-jit-debug-42.0.1-build-script-run[out_dir])",
+    },
     features = [
         "gdb_jit_int",
         "object",
@@ -6554,19 +6392,48 @@ cargo.rust_library(
             deps = [":rustix-1.1.3"],
         ),
     },
+    rustc_flags = ["@$(location :wasmtime-internal-jit-debug-42.0.1-build-script-run[rustc_flags])"],
     visibility = [],
-    deps = [
-        ":object-0.37.3",
-        ":wasmtime-internal-jit-debug-42.0.1-gdbjit-helpers",
-    ],
+    deps = [":object-0.37.3"],
 )
 
-third_party_rust_cxx_library(
-    name = "wasmtime-internal-jit-debug-42.0.1-gdbjit-helpers",
-    srcs = [":wasmtime-internal-jit-debug-42.0.1.crate[gdbjit.c]"],
-    headers = [],
-    compiler_flags = ["-DVERSIONED_SUFFIX=_42_0_1"],
+cargo.rust_binary(
+    name = "wasmtime-internal-jit-debug-42.0.1-build-script-build",
+    srcs = [":wasmtime-internal-jit-debug-42.0.1.crate"],
+    crate = "build_script_build",
+    crate_root = "wasmtime-internal-jit-debug-42.0.1.crate/build.rs",
+    edition = "2024",
+    features = [
+        "gdb_jit_int",
+        "object",
+        "perf_jitdump",
+        "rustix",
+        "std",
+    ],
+    named_deps = {
+        "wasmtime_versioned_export_macros": ":wasmtime-internal-versioned-export-macros-42.0.1",
+    },
     visibility = [],
+    deps = [":cc-1.2.56"],
+)
+
+buildscript_run(
+    name = "wasmtime-internal-jit-debug-42.0.1-build-script-run",
+    package_name = "wasmtime-internal-jit-debug",
+    buildscript_rule = ":wasmtime-internal-jit-debug-42.0.1-build-script-build",
+    env = {
+        "OPT_LEVEL": "3",
+    },
+    features = [
+        "gdb_jit_int",
+        "object",
+        "perf_jitdump",
+        "rustix",
+        "std",
+    ],
+    rustc_link_lib = True,
+    rustc_link_search = True,
+    version = "42.0.1",
 )
 
 http_archive(
@@ -6593,10 +6460,10 @@ cargo.rust_library(
         "linux-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos": dict(
+        "macos-arm64": dict(
             deps = [":libc-0.2.182"],
         ),
-        "macos-arm64": dict(
+        "macos-x86_64": dict(
             deps = [":libc-0.2.182"],
         ),
         "windows-gnu": dict(
@@ -6740,29 +6607,15 @@ cargo.rust_library(
         "p3",
     ],
     platform = {
-        "linux-arm64": dict(
-            deps = [":rustix-1.1.3"],
-        ),
-        "linux-x86_64": dict(
-            deps = [":rustix-1.1.3"],
-        ),
-        "macos": dict(
-            deps = [":rustix-1.1.3"],
-        ),
-        "macos-arm64": dict(
-            deps = [":rustix-1.1.3"],
-        ),
         "windows-gnu": dict(
             deps = [
                 ":io-extras-0.18.4",
-                ":rustix-1.1.3",
                 ":windows-sys-0.61.2",
             ],
         ),
         "windows-msvc": dict(
             deps = [
                 ":io-extras-0.18.4",
-                ":rustix-1.1.3",
                 ":windows-sys-0.61.2",
             ],
         ),
@@ -6780,6 +6633,7 @@ cargo.rust_library(
         ":fs-set-times-0.20.3",
         ":futures-0.3.31",
         ":io-lifetimes-2.0.4",
+        ":rustix-1.1.3",
         ":system-interface-0.27.3",
         ":thiserror-2.0.18",
         ":tokio-1.49.0",
@@ -6944,6 +6798,9 @@ cargo.rust_library(
     crate = "winapi",
     crate_root = "winapi-0.3.9.crate/src/lib.rs",
     edition = "2015",
+    env = {
+        "OUT_DIR": "$(location :winapi-0.3.9-build-script-run[out_dir])",
+    },
     features = [
         "knownfolders",
         "objbase",
@@ -6956,7 +6813,39 @@ cargo.rust_library(
             deps = [":winapi-x86_64-pc-windows-gnu-0.4.0"],
         ),
     },
+    rustc_flags = ["@$(location :winapi-0.3.9-build-script-run[rustc_flags])"],
     visibility = [],
+)
+
+cargo.rust_binary(
+    name = "winapi-0.3.9-build-script-build",
+    srcs = [":winapi-0.3.9.crate"],
+    crate = "build_script_build",
+    crate_root = "winapi-0.3.9.crate/build.rs",
+    edition = "2015",
+    features = [
+        "knownfolders",
+        "objbase",
+        "shlobj",
+        "winbase",
+        "winerror",
+    ],
+    visibility = [],
+)
+
+buildscript_run(
+    name = "winapi-0.3.9-build-script-run",
+    package_name = "winapi",
+    buildscript_rule = ":winapi-0.3.9-build-script-build",
+    features = [
+        "knownfolders",
+        "objbase",
+        "shlobj",
+        "winbase",
+        "winerror",
+    ],
+    rustc_link_lib = True,
+    version = "0.3.9",
 )
 
 http_archive(
@@ -6991,7 +6880,28 @@ cargo.rust_library(
     crate = "winapi_x86_64_pc_windows_gnu",
     crate_root = "winapi-x86_64-pc-windows-gnu-0.4.0.crate/src/lib.rs",
     edition = "2015",
+    env = {
+        "OUT_DIR": "$(location :winapi-x86_64-pc-windows-gnu-0.4.0-build-script-run[out_dir])",
+    },
+    rustc_flags = ["@$(location :winapi-x86_64-pc-windows-gnu-0.4.0-build-script-run[rustc_flags])"],
     visibility = [],
+)
+
+cargo.rust_binary(
+    name = "winapi-x86_64-pc-windows-gnu-0.4.0-build-script-build",
+    srcs = [":winapi-x86_64-pc-windows-gnu-0.4.0.crate"],
+    crate = "build_script_build",
+    crate_root = "winapi-x86_64-pc-windows-gnu-0.4.0.crate/build.rs",
+    edition = "2015",
+    visibility = [],
+)
+
+buildscript_run(
+    name = "winapi-x86_64-pc-windows-gnu-0.4.0-build-script-run",
+    package_name = "winapi-x86_64-pc-windows-gnu",
+    buildscript_rule = ":winapi-x86_64-pc-windows-gnu-0.4.0-build-script-build",
+    rustc_link_search = True,
+    version = "0.4.0",
 )
 
 http_archive(
@@ -7262,7 +7172,9 @@ cargo.rust_library(
             deps = [":windows_x86_64_msvc-0.52.6"],
         ),
     },
+    rustc_flags = ["--cfg=windows_raw_dylib"],
     visibility = [],
+    deps = [":windows-link-0.2.1"],
 )
 
 http_archive(
@@ -7287,7 +7199,9 @@ cargo.rust_library(
             deps = [":windows_x86_64_msvc-0.53.1"],
         ),
     },
+    rustc_flags = ["--cfg=windows_raw_dylib"],
     visibility = [],
+    deps = [":windows-link-0.2.1"],
 )
 
 http_archive(
@@ -7304,7 +7218,28 @@ cargo.rust_library(
     crate = "windows_x86_64_gnu",
     crate_root = "windows_x86_64_gnu-0.52.6.crate/src/lib.rs",
     edition = "2021",
+    env = {
+        "OUT_DIR": "$(location :windows_x86_64_gnu-0.52.6-build-script-run[out_dir])",
+    },
+    rustc_flags = ["@$(location :windows_x86_64_gnu-0.52.6-build-script-run[rustc_flags])"],
     visibility = [],
+)
+
+cargo.rust_binary(
+    name = "windows_x86_64_gnu-0.52.6-build-script-build",
+    srcs = [":windows_x86_64_gnu-0.52.6.crate"],
+    crate = "build_script_build",
+    crate_root = "windows_x86_64_gnu-0.52.6.crate/build.rs",
+    edition = "2021",
+    visibility = [],
+)
+
+buildscript_run(
+    name = "windows_x86_64_gnu-0.52.6-build-script-run",
+    package_name = "windows_x86_64_gnu",
+    buildscript_rule = ":windows_x86_64_gnu-0.52.6-build-script-build",
+    rustc_link_search = True,
+    version = "0.52.6",
 )
 
 http_archive(
@@ -7321,7 +7256,28 @@ cargo.rust_library(
     crate = "windows_x86_64_gnu",
     crate_root = "windows_x86_64_gnu-0.53.1.crate/src/lib.rs",
     edition = "2021",
+    env = {
+        "OUT_DIR": "$(location :windows_x86_64_gnu-0.53.1-build-script-run[out_dir])",
+    },
+    rustc_flags = ["@$(location :windows_x86_64_gnu-0.53.1-build-script-run[rustc_flags])"],
     visibility = [],
+)
+
+cargo.rust_binary(
+    name = "windows_x86_64_gnu-0.53.1-build-script-build",
+    srcs = [":windows_x86_64_gnu-0.53.1.crate"],
+    crate = "build_script_build",
+    crate_root = "windows_x86_64_gnu-0.53.1.crate/build.rs",
+    edition = "2021",
+    visibility = [],
+)
+
+buildscript_run(
+    name = "windows_x86_64_gnu-0.53.1-build-script-run",
+    package_name = "windows_x86_64_gnu",
+    buildscript_rule = ":windows_x86_64_gnu-0.53.1-build-script-build",
+    rustc_link_search = True,
+    version = "0.53.1",
 )
 
 http_archive(
@@ -7338,7 +7294,28 @@ cargo.rust_library(
     crate = "windows_x86_64_msvc",
     crate_root = "windows_x86_64_msvc-0.52.6.crate/src/lib.rs",
     edition = "2021",
+    env = {
+        "OUT_DIR": "$(location :windows_x86_64_msvc-0.52.6-build-script-run[out_dir])",
+    },
+    rustc_flags = ["@$(location :windows_x86_64_msvc-0.52.6-build-script-run[rustc_flags])"],
     visibility = [],
+)
+
+cargo.rust_binary(
+    name = "windows_x86_64_msvc-0.52.6-build-script-build",
+    srcs = [":windows_x86_64_msvc-0.52.6.crate"],
+    crate = "build_script_build",
+    crate_root = "windows_x86_64_msvc-0.52.6.crate/build.rs",
+    edition = "2021",
+    visibility = [],
+)
+
+buildscript_run(
+    name = "windows_x86_64_msvc-0.52.6-build-script-run",
+    package_name = "windows_x86_64_msvc",
+    buildscript_rule = ":windows_x86_64_msvc-0.52.6-build-script-build",
+    rustc_link_search = True,
+    version = "0.52.6",
 )
 
 http_archive(
@@ -7355,7 +7332,28 @@ cargo.rust_library(
     crate = "windows_x86_64_msvc",
     crate_root = "windows_x86_64_msvc-0.53.1.crate/src/lib.rs",
     edition = "2021",
+    env = {
+        "OUT_DIR": "$(location :windows_x86_64_msvc-0.53.1-build-script-run[out_dir])",
+    },
+    rustc_flags = ["@$(location :windows_x86_64_msvc-0.53.1-build-script-run[rustc_flags])"],
     visibility = [],
+)
+
+cargo.rust_binary(
+    name = "windows_x86_64_msvc-0.53.1-build-script-build",
+    srcs = [":windows_x86_64_msvc-0.53.1.crate"],
+    crate = "build_script_build",
+    crate_root = "windows_x86_64_msvc-0.53.1.crate/build.rs",
+    edition = "2021",
+    visibility = [],
+)
+
+buildscript_run(
+    name = "windows_x86_64_msvc-0.53.1-build-script-run",
+    package_name = "windows_x86_64_msvc",
+    buildscript_rule = ":windows_x86_64_msvc-0.53.1-build-script-build",
+    rustc_link_search = True,
+    version = "0.53.1",
 )
 
 http_archive(
@@ -8183,13 +8181,10 @@ cargo.rust_library(
         "linux-x86_64": dict(
             deps = [":zstd-sys-2.0.16+zstd.1.5.7-zstd"],
         ),
-        "macos": dict(
-            deps = [":zstd-sys-2.0.16+zstd.1.5.7-zstd"],
-        ),
         "macos-arm64": dict(
             deps = [":zstd-sys-2.0.16+zstd.1.5.7-zstd"],
         ),
-        "wasi-wasm32": dict(
+        "macos-x86_64": dict(
             deps = [":zstd-sys-2.0.16+zstd.1.5.7-zstd"],
         ),
         "windows-gnu": dict(
@@ -8202,7 +8197,7 @@ cargo.rust_library(
     visibility = [],
 )
 
-third_party_rust_cxx_library(
+cxx_library(
     name = "zstd-sys-2.0.16+zstd.1.5.7-zstd",
     srcs = [
         ":zstd-sys-2.0.16+zstd.1.5.7.crate[zstd/lib/common/debug.c]",
@@ -8309,7 +8304,7 @@ third_party_rust_cxx_library(
     visibility = [],
 )
 
-third_party_rust_cxx_library(
+cxx_library(
     name = "zstd-sys-2.0.16+zstd.1.5.7-zstd-msvc",
     srcs = [
         ":zstd-sys-2.0.16+zstd.1.5.7.crate[zstd/lib/common/debug.c]",

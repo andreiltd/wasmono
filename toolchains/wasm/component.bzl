@@ -86,7 +86,7 @@ load(
 )
 
 load("@prelude//decls:common.bzl", buck = "buck")
-load("@prelude//os_lookup:defs.bzl", "OsLookup")
+load("@prelude//os_lookup:defs.bzl", "Os", "OsLookup")
 load(":bindgen.bzl", "WitBindgenInfo")
 load(":binaryen.bzl", "BinaryenInfo")
 load(":jco.bzl", "JcoInfo")
@@ -895,30 +895,37 @@ def _wit_library_impl(ctx: AnalysisContext) -> list[Provider]:
     """
 
     wkg_info = ctx.attrs._wkg_toolchain[WkgInfo]
+    is_windows = ctx.attrs._exec_os_type[OsLookup].os == Os("windows")
 
     # Declare output directory to hold the WIT + resolved deps
     output_dir = ctx.actions.declare_output(ctx.label.name, dir = True)
 
-    # Build a shell script that:
-    # 1. Copies source WIT files into the output directory
-    # 2. Runs wkg wit fetch to resolve dependencies
-    copy_parts = []
-    for src in ctx.attrs.wit:
-        copy_parts.append(cmd_args("cp", src, output_dir.as_output(), delimiter = " "))
-
+    # Build a script that:
+    # 1. Creates the output directory
+    # 2. Copies source WIT files into the output directory
+    # 3. Runs wkg wit fetch to resolve dependencies
     fetch_cmd = cmd_args(wkg_info.wit, "fetch", "-d", output_dir.as_output(), delimiter = " ")
     if ctx.attrs.config:
         fetch_cmd.add("--config", ctx.attrs.config)
     if ctx.attrs.cache:
         fetch_cmd.add("--cache", ctx.attrs.cache)
 
-    script = cmd_args("/bin/sh", "-c")
-    all_parts = cmd_args(delimiter = " && ")
-    all_parts.add(cmd_args("mkdir", "-p", output_dir.as_output(), delimiter = " "))
-    for cp in copy_parts:
-        all_parts.add(cp)
-    all_parts.add(fetch_cmd)
-    script.add(all_parts)
+    if is_windows:
+        script = cmd_args("cmd.exe", "/c")
+        all_parts = cmd_args(delimiter = " && ")
+        all_parts.add(cmd_args("mkdir", output_dir.as_output(), delimiter = " "))
+        for src in ctx.attrs.wit:
+            all_parts.add(cmd_args("copy", src, output_dir.as_output(), delimiter = " "))
+        all_parts.add(fetch_cmd)
+        script.add(all_parts)
+    else:
+        script = cmd_args("/bin/sh", "-c")
+        all_parts = cmd_args(delimiter = " && ")
+        all_parts.add(cmd_args("mkdir", "-p", output_dir.as_output(), delimiter = " "))
+        for src in ctx.attrs.wit:
+            all_parts.add(cmd_args("cp", src, output_dir.as_output(), delimiter = " "))
+        all_parts.add(fetch_cmd)
+        script.add(all_parts)
 
     ctx.actions.run(script, category = "wit_library")
 
@@ -952,6 +959,7 @@ wit_library = rule(
             default = "toolchains//:wkg",
             providers = [WkgInfo],
         ),
+        "_exec_os_type": buck.exec_os_type_arg(),
     },
     doc = "Defines a WIT library with automatic dependency resolution via wkg wit fetch",
 )
@@ -1115,7 +1123,14 @@ def _wasm_componentize_js_impl(ctx: AnalysisContext) -> list[Provider]:
     # jco componentize uses TMPDIR for its internal StarlingMonkey working
     # directory. Buck2 may not propagate a valid TMPDIR to local actions,
     # causing jco to fail when resolving its generated index.js wrapper.
-    ctx.actions.run(cmd, category = "wasm_componentize_js", env = {"TMPDIR": "/tmp"})
+    tmp_dir = ctx.actions.declare_output("jco_tmp", dir = True)
+    env = {
+        "TMPDIR": tmp_dir.as_output(),
+        "TEMP": tmp_dir.as_output(),
+        "TMP": tmp_dir.as_output(),
+    }
+        
+    ctx.actions.run(cmd, category = "wasm_componentize_js", env = env)
 
     return [
         DefaultInfo(default_output = output_file),
@@ -1259,6 +1274,7 @@ def _wasm_test_impl(ctx: AnalysisContext) -> list[Provider]:
     """Test a WASM component by running it via wasmtime and checking exit code."""
     component_file = _resolve_component_from_deps([ctx.attrs.component])
     wasmtime_info = ctx.attrs._wasmtime_toolchain[WasmtimeInfo]
+    is_windows = ctx.attrs._exec_os_type[OsLookup].os == Os("windows")
 
     cmd = _build_wasmtime_cmd(wasmtime_info, component_file, ctx.attrs)
 
@@ -1266,7 +1282,8 @@ def _wasm_test_impl(ctx: AnalysisContext) -> list[Provider]:
     needs_wrapper = expected != 0 or (ctx.attrs.isolate_dirs and len(ctx.attrs.wasi_dirs) > 0)
 
     if needs_wrapper:
-        wrapper_cmd = cmd_args("python3", ctx.attrs._test_wrapper)
+        python = "python" if is_windows else "python3"
+        wrapper_cmd = cmd_args(python, ctx.attrs._test_wrapper)
         wrapper_cmd.add("--expected-exit-code", str(expected))
         wrapper_cmd.add(cmd_args([cmd_args("--isolate-dir", d) for d in ctx.attrs.wasi_dirs]))
         wrapper_cmd.add("--")

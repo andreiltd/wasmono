@@ -322,6 +322,10 @@ wasmtime_releases = {
             "shasum": "13465d6c3f35b2872f9168df19b74af6140b4f1a3a11d8a397950777ecfae858",
             "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v42.0.1/wasmtime-v42.0.1-x86_64-macos.tar.xz",
         },
+        "x86_64-windows": {
+            "shasum": "daa52754776eabdbbf82037d41a26f556ccd4fd5723dcab328b12c680894c072",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v42.0.1/wasmtime-v42.0.1-x86_64-windows.zip",
+        },
     },
     "41.0.3": {
         "aarch64-linux": {
