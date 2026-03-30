@@ -95,10 +95,22 @@ BinaryenDistributionInfo = provider(
 )
 
 def _binaryen_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
-    dst = ctx.actions.declare_output("wasm-opt" + ctx.attrs.suffix)
     dist_output = ctx.attrs.dist[DefaultInfo].default_outputs[0]
-    src = dist_output.project(ctx.attrs.prefix + "/bin/wasm-opt" + ctx.attrs.suffix)
 
+    # On macOS, wasm-opt is dynamically linked against libbinaryen.dylib via
+    # @rpath/../lib/. Preserve the bin/lib directory structure so the rpath
+    # resolves correctly.
+    if ctx.attrs.os == "macos":
+        dst = ctx.actions.declare_output("bin/wasm-opt" + ctx.attrs.suffix)
+        dylib_src = dist_output.project(ctx.attrs.prefix + "/lib/libbinaryen.dylib")
+        dylib_dst = ctx.actions.declare_output("lib/libbinaryen.dylib")
+        ctx.actions.copy_file(dylib_dst.as_output(), dylib_src)
+        extra_hidden = [dylib_dst]
+    else:
+        dst = ctx.actions.declare_output("wasm-opt" + ctx.attrs.suffix)
+        extra_hidden = []
+
+    src = dist_output.project(ctx.attrs.prefix + "/bin/wasm-opt" + ctx.attrs.suffix)
     ctx.actions.copy_file(dst.as_output(), src)
 
     wasm_opt = cmd_args(
@@ -106,7 +118,7 @@ def _binaryen_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
         hidden = [
             ctx.attrs.dist[DefaultInfo].default_outputs,
             ctx.attrs.dist[DefaultInfo].other_outputs,
-        ],
+        ] + extra_hidden,
     )
 
     return [
