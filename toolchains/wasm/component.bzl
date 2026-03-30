@@ -912,7 +912,7 @@ def _wit_library_impl(ctx: AnalysisContext) -> list[Provider]:
 
     if is_windows:
         script = cmd_args("cmd.exe", "/c")
-        all_parts = cmd_args(delimiter = " & ")
+        all_parts = cmd_args(delimiter = " && ")
         all_parts.add(cmd_args("mkdir", output_dir.as_output(), delimiter = " "))
         for src in ctx.attrs.wit:
             all_parts.add(cmd_args("copy", src, output_dir.as_output(), delimiter = " "))
@@ -1101,7 +1101,6 @@ wasm_compose = rule(
 def _wasm_componentize_js_impl(ctx: AnalysisContext) -> list[Provider]:
     """Build a WASM component from JavaScript source using jco componentize."""
     jco_info = ctx.attrs._jco_toolchain[JcoInfo]
-    is_windows = ctx.attrs._exec_os_type[OsLookup].os == Os("windows")
 
     output_file = ctx.actions.declare_output("{}.component.wasm".format(ctx.label.name))
 
@@ -1124,7 +1123,13 @@ def _wasm_componentize_js_impl(ctx: AnalysisContext) -> list[Provider]:
     # jco componentize uses TMPDIR for its internal StarlingMonkey working
     # directory. Buck2 may not propagate a valid TMPDIR to local actions,
     # causing jco to fail when resolving its generated index.js wrapper.
-    env = {"TEMP": "C:\\Temp", "TMP": "C:\\Temp"} if is_windows else {"TMPDIR": "/tmp"}
+    tmp_dir = ctx.actions.declare_output("jco_tmp", dir = True)
+    env = {
+        "TMPDIR": tmp_dir.as_output(),
+        "TEMP": tmp_dir.as_output(),
+        "TMP": tmp_dir.as_output(),
+    }
+        
     ctx.actions.run(cmd, category = "wasm_componentize_js", env = env)
 
     return [
@@ -1159,7 +1164,6 @@ wasm_componentize_js = rule(
             default = "toolchains//:jco",
             providers = [JcoInfo],
         ),
-        "_exec_os_type": buck.exec_os_type_arg(),
     },
     doc = "Creates a WASM Component from JavaScript source using 'jco componentize'",
 )

@@ -15,7 +15,6 @@ Usage:
     ./tests/test_external_cell.py <sha>    # uses specific commit
 """
 
-import os
 import shutil
 import subprocess
 import sys
