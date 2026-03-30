@@ -77,12 +77,9 @@ WkgDistributionInfo = provider(
 
 def _wkg_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
     # Create a copy of the wkg binary
-    dst = ctx.actions.declare_output("wkg")
+    dst = ctx.actions.declare_output("wkg" + ctx.attrs.suffix)
 
-    ctx.actions.run(
-        ["cp", ctx.attrs.dist[DefaultInfo].default_outputs[0], dst.as_output()],
-        category = "cp_wkg",
-    )
+    ctx.actions.copy_file(dst.as_output(), ctx.attrs.dist[DefaultInfo].default_outputs[0])
 
     wkg_args = cmd_args(
         [dst],
@@ -105,6 +102,7 @@ wkg_distribution = rule(
         "arch": attrs.string(),
         "dist": attrs.dep(providers = [DefaultInfo]),
         "os": attrs.string(),
+        "suffix": attrs.string(default = ""),
         "version": attrs.string(),
     },
 )
@@ -143,6 +141,7 @@ def download_wkg(
     wkg_distribution(
         name = name,
         dist = ":" + name + "_bin",
+        suffix = ".exe" if "windows" in os else "",
         version = version,
         arch = arch,
         os = os,

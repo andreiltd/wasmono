@@ -1,12 +1,8 @@
 cargo_env = ["CARGO_PKG_VERSION", "CARGO_PKG_VERSION_MAJOR", "CARGO_PKG_VERSION_MINOR", "CARGO_PKG_VERSION_PATCH"]
 
+# The build script compiles helpers.c using cc::Build with versioned symbols.
+# It auto-detects the OS and sets CFG_TARGET_OS_windows/FEATURE_DEBUG_BUILTINS.
 [buildscript.run]
 env = { OPT_LEVEL = "3" }
-
-# The wasmtime build script compiles helpers.c into libwasmtime-helpers.a.
-# Since this prelude doesn't support rustc_link_search, we compile helpers.c
-# as a separate cxx_library and add it as a native dep.
-[[cxx_library]]
-name = "wasmtime-helpers"
-srcs = ["src/runtime/vm/helpers.c"]
-compiler_flags = ["-DVERSIONED_SUFFIX=_42_0_1", "-DFEATURE_DEBUG_BUILTINS"]
+rustc_link_search = true
+rustc_link_lib = true

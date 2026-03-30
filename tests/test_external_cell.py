@@ -15,6 +15,7 @@ Usage:
     ./tests/test_external_cell.py <sha>    # uses specific commit
 """
 
+import os
 import shutil
 import subprocess
 import sys
@@ -38,15 +39,26 @@ def _set_revision(rev: str, repo: Path, buckconfig: Path) -> None:
 
     Mirrors Buck2's _set_revision() from test_git.py.
     """
+    # file:// URIs need forward slashes; on Windows convert backslashes
+    repo_uri = repo.as_posix()
+    if sys.platform == "win32" and not repo_uri.startswith("/"):
+        repo_uri = "/" + repo_uri
+
     text = buckconfig.read_text()
-    text = text.replace("git_origin = <PLACEHOLDER>", f"git_origin = file://{repo}")
+    text = text.replace("git_origin = <PLACEHOLDER>", f"git_origin = file://{repo_uri}")
     text = text.replace("commit_hash = <PLACEHOLDER>", f"commit_hash = {rev}")
     buckconfig.write_text(text)
 
 
 def _buck2(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
+    buck2_path = str(cwd / "buck2")
+    if sys.platform == "win32":
+        # DotSlash files need to be invoked via `dotslash buck2` on Windows
+        cmd = ["dotslash", buck2_path] + args
+    else:
+        cmd = [buck2_path] + args
     return subprocess.run(
-        [str(cwd / "buck2")] + args,
+        cmd,
         cwd=cwd,
         capture_output=True,
         text=True,
@@ -69,7 +81,8 @@ def main() -> int:
         # Copy test fixture into workspace
         shutil.copytree(data_dir, workspace, dirs_exist_ok=True)
         shutil.copy2(repo / "buck2", workspace / "buck2")
-        (workspace / "buck2").chmod(0o755)
+        if sys.platform != "win32":
+            (workspace / "buck2").chmod(0o755)
 
         # Patch .buckconfig (mirrors _set_revision)
         _set_revision(commit, repo, workspace / ".buckconfig")

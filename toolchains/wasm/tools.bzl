@@ -99,14 +99,11 @@ WasmToolsDistributionInfo = provider(
 
 def _wasm_tools_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
     # Create a copy of the wasm-tools binary for easy access
-    dst = ctx.actions.declare_output("wasm-tools")
+    dst = ctx.actions.declare_output("wasm-tools" + ctx.attrs.suffix)
     dist_output = ctx.attrs.dist[DefaultInfo].default_outputs[0]
-    src = cmd_args(dist_output, format = "{{}}/{}".format(ctx.attrs.prefix + "/wasm-tools" + ctx.attrs.suffix))
+    src = dist_output.project(ctx.attrs.prefix + "/wasm-tools" + ctx.attrs.suffix)
 
-    ctx.actions.run(
-        ["cp", src, dst.as_output()],
-        category = "cp_wasm_tools",
-    )
+    ctx.actions.copy_file(dst.as_output(), src)
 
     wasm_tools = cmd_args(
         [dst],

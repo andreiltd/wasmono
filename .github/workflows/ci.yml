@@ -8,7 +8,11 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,8 +28,18 @@ jobs:
         with:
           targets: wasm32-wasip1,wasm32-wasip2
 
-      - name: Run tests
+      - name: Run tests (Linux)
+        if: runner.os == 'Linux'
         run: ./buck2 test //examples/...
 
-      - name: Test external cell compatibility
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        run: dotslash buck2 test //examples/...
+
+      - name: Test external cell compatibility (Linux)
+        if: runner.os == 'Linux'
         run: python3 tests/test_external_cell.py
+
+      - name: Test external cell compatibility (Windows)
+        if: runner.os == 'Windows'
+        run: python tests/test_external_cell.py

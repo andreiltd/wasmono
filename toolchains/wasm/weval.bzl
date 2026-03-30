@@ -84,14 +84,11 @@ WevalDistributionInfo = provider(
 )
 
 def _weval_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
-    dst = ctx.actions.declare_output("weval")
+    dst = ctx.actions.declare_output("weval" + ctx.attrs.suffix)
     dist_output = ctx.attrs.dist[DefaultInfo].default_outputs[0]
-    src = cmd_args(dist_output, format = "{{}}/{}".format(ctx.attrs.prefix + "/weval" + ctx.attrs.suffix))
+    src = dist_output.project(ctx.attrs.prefix + "/weval" + ctx.attrs.suffix)
 
-    ctx.actions.run(
-        ["cp", src, dst.as_output()],
-        category = "cp_weval",
-    )
+    ctx.actions.copy_file(dst.as_output(), src)
 
     weval = cmd_args(
         [dst],

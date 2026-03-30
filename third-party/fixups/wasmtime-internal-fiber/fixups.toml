@@ -1,1 +1,6 @@
-buildscript.run = false
+# The build script compiles src/windows.c on Windows for fiber support.
+# On Linux/macOS it's a no-op (fiber uses inline assembly).
+[buildscript.run]
+env = { OPT_LEVEL = "3" }
+rustc_link_search = true
+rustc_link_lib = true

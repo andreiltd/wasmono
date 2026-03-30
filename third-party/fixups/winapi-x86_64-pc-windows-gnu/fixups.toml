@@ -1,1 +1,2 @@
-buildscript.run = false
+[buildscript.run]
+rustc_link_search = true

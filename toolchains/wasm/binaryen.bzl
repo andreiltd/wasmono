@@ -95,14 +95,11 @@ BinaryenDistributionInfo = provider(
 )
 
 def _binaryen_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
-    dst = ctx.actions.declare_output("wasm-opt")
+    dst = ctx.actions.declare_output("wasm-opt" + ctx.attrs.suffix)
     dist_output = ctx.attrs.dist[DefaultInfo].default_outputs[0]
-    src = cmd_args(dist_output, format = "{{}}/{}".format(ctx.attrs.prefix + "/bin/wasm-opt" + ctx.attrs.suffix))
+    src = dist_output.project(ctx.attrs.prefix + "/bin/wasm-opt" + ctx.attrs.suffix)
 
-    ctx.actions.run(
-        ["cp", src, dst.as_output()],
-        category = "cp_wasm_opt",
-    )
+    ctx.actions.copy_file(dst.as_output(), src)
 
     wasm_opt = cmd_args(
         [dst],

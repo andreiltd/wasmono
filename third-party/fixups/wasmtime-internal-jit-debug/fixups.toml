@@ -1,7 +1,6 @@
-buildscript.run = false
-
-# Build script compiles gdbjit.c; we do it as a cxx_library instead.
-[[cxx_library]]
-name = "gdbjit-helpers"
-srcs = ["gdbjit.c"]
-compiler_flags = ["-DVERSIONED_SUFFIX=_42_0_1"]
+# The build script compiles gdbjit.c using cc::Build with versioned symbols.
+# It auto-detects the OS and sets CFG_TARGET_OS_windows on Windows.
+[buildscript.run]
+env = { OPT_LEVEL = "3" }
+rustc_link_search = true
+rustc_link_lib = true

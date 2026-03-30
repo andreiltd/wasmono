@@ -32,7 +32,7 @@ def main():
                 host, guest = dir_spec.split("::", 1)
             else:
                 host, guest = dir_spec, os.path.basename(dir_spec)
-            shutil.copytree(host, os.path.join(scratch, guest), symlinks=True)
+            shutil.copytree(host, os.path.join(scratch, guest), symlinks=(os.name != "nt"))
             cmd = [a.replace(host, os.path.join(scratch, guest)) for a in cmd]
 
     result = subprocess.run(cmd)

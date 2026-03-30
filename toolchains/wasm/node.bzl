@@ -100,20 +100,35 @@ def _node_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
     dist_output = ctx.attrs.dist[DefaultInfo].default_outputs[0]
     prefix = ctx.attrs.prefix
 
+    is_windows = ctx.attrs.os == "windows"
+
     # Copy the node binary out of the archive (single file, like wasmtime pattern)
-    node_dst = ctx.actions.declare_output("node")
-    node_src = cmd_args(dist_output, format = "{{}}/{}".format(prefix + "/bin/node"))
-    ctx.actions.run(
-        ["cp", node_src, node_dst.as_output()],
-        category = "cp_node",
-    )
+    suffix = ".exe" if is_windows else ""
+    node_dst = ctx.actions.declare_output("node" + suffix)
+
+    if is_windows:
+        # Windows: node.exe lives at <prefix>/node.exe
+        node_src = dist_output.project(prefix + "/node.exe")
+    else:
+        # Unix: node lives at <prefix>/bin/node
+        node_src = dist_output.project(prefix + "/bin/node")
+
+    ctx.actions.copy_file(node_dst.as_output(), node_src)
 
     # npm is a Node.js script that needs its entire module tree, so reference
     # npm-cli.js in-place within the archive rather than copying it out.
-    npm_cli_js = cmd_args(
-        dist_output,
-        format = "{{}}/{}".format(prefix + "/lib/node_modules/npm/bin/npm-cli.js"),
-    )
+    if is_windows:
+        # Windows: npm at <prefix>/node_modules/npm/bin/npm-cli.js
+        npm_cli_js = cmd_args(
+            dist_output,
+            format = "{{}}/{}".format(prefix + "/node_modules/npm/bin/npm-cli.js"),
+        )
+    else:
+        # Unix: npm at <prefix>/lib/node_modules/npm/bin/npm-cli.js
+        npm_cli_js = cmd_args(
+            dist_output,
+            format = "{{}}/{}".format(prefix + "/lib/node_modules/npm/bin/npm-cli.js"),
+        )
 
     dist_deps = [
         ctx.attrs.dist[DefaultInfo].default_outputs,
