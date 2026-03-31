@@ -3,3 +3,9 @@ export_file(
     src = "test_wrapper.py",
     visibility = ["PUBLIC"],
 )
+
+export_file(
+    name = "asc_build",
+    src = "asc_build.py",
+    visibility = ["PUBLIC"],
+)

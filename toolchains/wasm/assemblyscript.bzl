@@ -34,6 +34,8 @@ load(
     ":node.bzl",
     "NodeInfo",
 )
+load("@prelude//decls:common.bzl", buck = "buck")
+load("@prelude//os_lookup:defs.bzl", "Os", "OsLookup")
 
 AscInfo = provider(
     # @unsorted-dict-items
@@ -138,6 +140,7 @@ asc_toolchain = rule(
 def _assemblyscript_binary_impl(ctx: AnalysisContext) -> list[Provider]:
     node_info = ctx.attrs._node_toolchain[NodeInfo]
     asc_info = ctx.attrs._asc_toolchain[AscInfo]
+    is_windows = ctx.attrs._exec_os_type[OsLookup].os == Os("windows")
 
     out = ctx.actions.declare_output(ctx.attrs.name + ".wasm")
 
@@ -150,46 +153,22 @@ def _assemblyscript_binary_impl(ctx: AnalysisContext) -> list[Provider]:
         format = "{}/node_modules",
     )
 
-    # asc resolves the wasi-shim's --lib from asconfig.json relative to
-    # node_modules, so we need a build directory with node_modules symlink
-    # and an asconfig.json that extends the wasi-shim config.
-    script_args = cmd_args(delimiter = " ")
-    script_args.add(
-        "set -e;",
-        "ORIG=$PWD;",
-        "BUILD=$(mktemp -d);",
+    # Use a Python build script to handle path separators correctly
+    # on all platforms (shell scripts mangle backslashes on Windows).
+    cmd = cmd_args(
+        "python3", ctx.attrs._build_script,
+        "--node", node_info.node,
+        "--asc", asc_js,
+        "--src", ctx.attrs.src,
+        "--out", out.as_output(),
+        "--node-modules", node_modules,
     )
-
     if ctx.attrs.wasi:
-        script_args.add(
-            "ln -s",
-            cmd_args(node_modules, format = "$ORIG/{}"),
-            "$BUILD/node_modules;",
-            'printf \'{"extends":"./node_modules/@assemblyscript/wasi-shim/asconfig.json"}\'',
-            "> $BUILD/asconfig.json;",
-        )
-
-    # Copy source to build directory (asc resolves input relative to cwd)
-    script_args.add("cp", ctx.attrs.src, "$BUILD/src_input.ts;")
-
-    # cd into build dir so asc finds asconfig.json, output path is absolute
-    script_args.add("cd $BUILD;")
-
-    # Run asc
-    script_args.add(
-        cmd_args(node_info.node, format = "$ORIG/{}"),
-        cmd_args(asc_js, format = "$ORIG/{}"),
-        "src_input.ts",
-        "-o", cmd_args(out.as_output(), format = "$ORIG/{}"),
-        "--path", cmd_args(node_modules, format = "$ORIG/{}"),
-    )
-
+        cmd.add("--wasi")
+    if is_windows:
+        cmd.add("--copy-modules")
     for flag in ctx.attrs.asc_flags:
-        script_args.add(flag)
-
-    script_args.add("; cd $ORIG; rm -rf $BUILD")
-
-    cmd = cmd_args("sh", "-c", script_args)
+        cmd.add(flag)
 
     ctx.actions.run(cmd, category = "asc_compile")
 
@@ -216,6 +195,10 @@ assemblyscript_binary = rule(
             default = "toolchains//:asc",
             providers = [AscInfo],
         ),
+        "_build_script": attrs.source(
+            default = "//tools:asc_build",
+        ),
+        "_exec_os_type": buck.exec_os_type_arg(),
     },
     doc = "Compile an AssemblyScript source file to a WebAssembly module",
 )
