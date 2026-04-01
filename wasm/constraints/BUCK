@@ -1,0 +1,16 @@
+constraint_setting(
+    name = "wasi_version",
+    visibility = ["PUBLIC"],
+)
+
+constraint_value(
+    name = "wasip1",
+    constraint_setting = ":wasi_version",
+    visibility = ["PUBLIC"],
+)
+
+constraint_value(
+    name = "wasip2",
+    constraint_setting = ":wasi_version",
+    visibility = ["PUBLIC"],
+)
