@@ -1,4 +1,4 @@
-load("@wasmono//toolchains/wasm:transition.bzl", "wasm_transition_p1")
+load("@wasmono//:defs.bzl", "wasm_transition_p1")
 
 def _wasip1_transition_check_impl(ctx: AnalysisContext) -> list[Provider]:
     return [ctx.attrs.actual[DefaultInfo]]

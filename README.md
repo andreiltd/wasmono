@@ -77,6 +77,10 @@ If the dependency already produces a component, use `component` instead of
 `module` so downstream rules receive `WasmInfo` without re-running
 `component new`.
 
+For WASI Preview 2 components, and newer component-shaped worlds such as
+WASI Preview 3 test components, omit `adapter`. The `adapter` attribute is
+only for adapting WASI Preview 1 core modules before componentization.
+
 ## Available Rules
 
 ### Component Rules
@@ -246,8 +250,7 @@ load("@prelude//toolchains:cxx.bzl", "system_cxx_toolchain")
 load("@prelude//toolchains:genrule.bzl", "system_genrule_toolchain")
 load("@prelude//toolchains:python.bzl", "system_python_bootstrap_toolchain")
 load("@prelude//toolchains:rust.bzl", "system_rust_toolchain")
-load("@wasmono//toolchains/wasm:demo.bzl", "wasm_demo_toolchains")
-load("@wasmono//toolchains/cxx/wasi:defs.bzl", "download_wasi_sdk", "cxx_wasi_toolchain")
+load("@wasmono//:defs.bzl", "cxx_wasi_toolchain", "download_wasi_sdk", "wasm_demo_toolchains")
 
 _DEFAULT_TRIPLE = select({
     "config//os:wasi": select({
@@ -311,6 +314,10 @@ load("@wasmono//:defs.bzl", "wasm_component", "wasm_compose")
 You can still load implementation modules such as
 `@wasmono//toolchains/wasm:component.bzl` directly, but `@wasmono//:defs.bzl`
 is the stable public entrypoint for user-facing rules and setup macros.
+It also exports lower-level setup helpers such as `download_node`,
+`download_wasm_tools`, `host_arch`, `host_os`, and `wasm_transition_p1` for
+repositories that need more granular toolchain wiring than
+`wasm_demo_toolchains()`.
 
 ## Custom Tool Releases
 
