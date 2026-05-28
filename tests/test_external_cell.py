@@ -6,12 +6,12 @@ Adapted from Buck2's external cell tests:
 
 The approach mirrors Buck2's test_git pattern:
     1. Copy test fixture (external_cell_data/) into a temp workspace
-    2. Set up a file:// git origin pointing at the wasmono repo
+    2. Set up a file:// git origin pointing at the wasmono repo snapshot
     3. Patch .buckconfig with git_origin + commit_hash
     4. Run buck2 targets + build to verify all loads resolve
 
 Usage:
-    ./tests/test_external_cell.py          # uses current HEAD
+    ./tests/test_external_cell.py          # uses current worktree snapshot
     ./tests/test_external_cell.py <sha>    # uses specific commit
 """
 
@@ -43,10 +43,63 @@ def _set_revision(rev: str, repo: Path, buckconfig: Path) -> None:
     if sys.platform == "win32" and not repo_uri.startswith("/"):
         repo_uri = "/" + repo_uri
 
-    text = buckconfig.read_text()
-    text = text.replace("git_origin = <PLACEHOLDER>", f"git_origin = file://{repo_uri}")
-    text = text.replace("commit_hash = <PLACEHOLDER>", f"commit_hash = {rev}")
-    buckconfig.write_text(text)
+    text = buckconfig.read_text(encoding="utf-8")
+    text = text.replace(
+        "git_origin = <PLACEHOLDER>",
+        f"git_origin = file://{repo_uri}",
+    )
+    text = text.replace(
+        "commit_hash = <PLACEHOLDER>",
+        f"commit_hash = {rev}",
+    )
+    buckconfig.write_text(text, encoding="utf-8")
+
+
+def _copy_worktree_file(src: Path, dst: Path) -> None:
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    if src.is_symlink():
+        dst.symlink_to(src.readlink())
+    else:
+        shutil.copy2(src, dst)
+
+
+def _snapshot_worktree(repo: Path, snapshot: Path) -> str:
+    """Create a git repo snapshot with tracked and untracked files."""
+    snapshot.mkdir()
+    files = subprocess.check_output(
+        [
+            "git",
+            "ls-files",
+            "-z",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+        ],
+        cwd=repo,
+    ).split(b"\0")
+    for raw_path in files:
+        if not raw_path:
+            continue
+        rel = Path(raw_path.decode())
+        src = repo / rel
+        if src.exists():
+            _copy_worktree_file(src, snapshot / rel)
+
+    subprocess.check_call(["git", "init", "--quiet"], cwd=snapshot)
+    subprocess.check_call(
+        ["git", "config", "user.email", "wasmono-test@example.invalid"],
+        cwd=snapshot,
+    )
+    subprocess.check_call(
+        ["git", "config", "user.name", "Wasmono Test"],
+        cwd=snapshot,
+    )
+    subprocess.check_call(["git", "add", "."], cwd=snapshot)
+    subprocess.check_call(
+        ["git", "commit", "--quiet", "-m", "snapshot"],
+        cwd=snapshot,
+    )
+    return _git(["rev-parse", "HEAD"], snapshot)
 
 
 def _buck2(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
@@ -60,20 +113,28 @@ def _buck2(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
         cmd,
         cwd=cwd,
         capture_output=True,
+        check=False,
         text=True,
     )
 
 
 def main() -> int:
+    """Run the external-cell compatibility test."""
     repo = _repo_root()
-    commit = sys.argv[1] if len(sys.argv) > 1 else _git(["rev-parse", "HEAD"], repo)
     data_dir = repo / "tests" / "external_cell_data"
 
     with tempfile.TemporaryDirectory() as tmp:
-        workspace = Path(tmp)
+        tmpdir = Path(tmp)
+        workspace = tmpdir / "workspace"
+        if len(sys.argv) > 1:
+            origin = repo
+            commit = sys.argv[1]
+        else:
+            origin = tmpdir / "wasmono-snapshot"
+            commit = _snapshot_worktree(repo, origin)
 
         print("=== External cell test ===")
-        print(f"  repo:   {repo}")
+        print(f"  repo:   {origin}")
         print(f"  commit: {commit}")
         print(f"  tmpdir: {workspace}")
 
@@ -84,7 +145,7 @@ def main() -> int:
             (workspace / "buck2").chmod(0o755)
 
         # Patch .buckconfig (mirrors _set_revision)
-        _set_revision(commit, repo, workspace / ".buckconfig")
+        _set_revision(commit, origin, workspace / ".buckconfig")
 
         try:
             # Verify target resolution
@@ -97,13 +158,19 @@ def main() -> int:
                 print(res.stderr)
                 return 1
 
-            # Build genrule to verify toolchain setup
-            print("--- Building genrule to verify toolchain setup ---")
-            res = _buck2(["build", "//:check"], workspace)
+            # Build genrules to verify toolchain setup and transition refs.
+            print("--- Building genrules to verify toolchain setup ---")
+            res = _buck2(
+                ["build", "//:check", "//:check_wasip1_transition"],
+                workspace,
+            )
             print(res.stderr)
 
             if res.returncode != 0:
-                print("FAILED: buck2 build //:check")
+                print(
+                    "FAILED: buck2 build "
+                    "//:check //:check_wasip1_transition"
+                )
                 print(res.stderr)
                 return 1
         finally:

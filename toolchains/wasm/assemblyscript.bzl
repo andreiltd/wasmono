@@ -1,7 +1,8 @@
 """AssemblyScript toolchain for compiling TypeScript to WebAssembly.
 
-Provides hermetic installation of the AssemblyScript compiler (`asc`) and
-a rule to compile `.ts` files to `.wasm` modules.
+Provides a pinned npm installation of the AssemblyScript compiler (`asc`) and
+a rule to compile `.ts` files to `.wasm` modules. The npm install action uses
+downloaded Node.js but still needs network access during the Buck action.
 
 ## Examples
 
@@ -36,6 +37,7 @@ load(
 )
 load("@prelude//decls:common.bzl", buck = "buck")
 load("@prelude//os_lookup:defs.bzl", "Os", "OsLookup")
+load("@prelude//python_bootstrap:python_bootstrap.bzl", "PythonBootstrapToolchainInfo")
 
 AscInfo = provider(
     # @unsorted-dict-items
@@ -46,7 +48,7 @@ AscInfo = provider(
 )
 
 # ---------------------------------------------------------------------------
-# install_asc — rule that npm-installs assemblyscript using hermetic Node.js
+# install_asc — rule that npm-installs assemblyscript using downloaded Node.js
 # ---------------------------------------------------------------------------
 
 def _install_asc_impl(ctx: AnalysisContext) -> list[Provider]:
@@ -78,7 +80,7 @@ _install_asc = rule(
     attrs = {
         "node": attrs.exec_dep(
             providers = [NodeInfo],
-            doc = "Node.js distribution providing hermetic node/npm",
+            doc = "Downloaded Node.js distribution providing node/npm",
         ),
         "version": attrs.string(
             default = "0.27.31",
@@ -89,7 +91,7 @@ _install_asc = rule(
             doc = "@assemblyscript/wasi-shim version to install",
         ),
     },
-    doc = "Install AssemblyScript compiler via npm using hermetic Node.js",
+    doc = "Install AssemblyScript compiler via npm using downloaded Node.js",
 )
 
 def install_asc(
@@ -140,6 +142,7 @@ asc_toolchain = rule(
 def _assemblyscript_binary_impl(ctx: AnalysisContext) -> list[Provider]:
     node_info = ctx.attrs._node_toolchain[NodeInfo]
     asc_info = ctx.attrs._asc_toolchain[AscInfo]
+    python = ctx.attrs._python_bootstrap_toolchain[PythonBootstrapToolchainInfo].interpreter
     is_windows = ctx.attrs._exec_os_type[OsLookup].os == Os("windows")
 
     out = ctx.actions.declare_output(ctx.attrs.name + ".wasm")
@@ -156,7 +159,7 @@ def _assemblyscript_binary_impl(ctx: AnalysisContext) -> list[Provider]:
     # Use a Python build script to handle path separators correctly
     # on all platforms (shell scripts mangle backslashes on Windows).
     cmd = cmd_args(
-        "python3", ctx.attrs._build_script,
+        python, ctx.attrs._build_script,
         "--node", node_info.node,
         "--asc", asc_js,
         "--src", ctx.attrs.src,
@@ -198,6 +201,10 @@ assemblyscript_binary = rule(
         "_build_script": attrs.source(
             default = "//tools:asc_build",
         ),
+        "_python_bootstrap_toolchain": attrs.default_only(attrs.toolchain_dep(
+            default = "toolchains//:python_bootstrap",
+            providers = [PythonBootstrapToolchainInfo],
+        )),
         "_exec_os_type": buck.exec_os_type_arg(),
     },
     doc = "Compile an AssemblyScript source file to a WebAssembly module",

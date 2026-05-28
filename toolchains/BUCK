@@ -10,7 +10,10 @@ load("//wasm:demo.bzl", "wasm_demo_toolchains")
 
 _DEFAULT_TRIPLE = select({
     "config//os:wasi": select({
-        "config//cpu:wasm32": "wasm32-wasip2",
+        "config//cpu:wasm32": select({
+            "wasmono//wasm/constraints:wasip1": "wasm32-wasip1",
+            "DEFAULT": "wasm32-wasip2",
+        }),
     }),
     "config//os:linux": select({
         "config//cpu:arm64": "aarch64-unknown-linux-gnu",
@@ -62,6 +65,13 @@ download_wasi_sdk(
 cxx_wasi_toolchain(
     name = "cxx_wasi",
     distribution = ":wasi_sdk",
+    visibility = ["PUBLIC"],
+)
+
+cxx_wasi_toolchain(
+    name = "cxx_wasi_p1",
+    distribution = ":wasi_sdk",
+    target = "wasm32-wasip1",
     visibility = ["PUBLIC"],
 )
 

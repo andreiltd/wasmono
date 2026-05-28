@@ -11,6 +11,7 @@ import tempfile
 
 
 def main():
+    """Run a wasm_test command and compare its exit code to expectations."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--expected-exit-code", type=int, default=0)
     parser.add_argument("--isolate-dir", action="append", default=[])
@@ -32,10 +33,14 @@ def main():
                 host, guest = dir_spec.split("::", 1)
             else:
                 host, guest = dir_spec, os.path.basename(dir_spec)
-            shutil.copytree(host, os.path.join(scratch, guest), symlinks=(os.name != "nt"))
+            shutil.copytree(
+                host,
+                os.path.join(scratch, guest),
+                symlinks=os.name != "nt",
+            )
             cmd = [a.replace(host, os.path.join(scratch, guest)) for a in cmd]
 
-    result = subprocess.run(cmd)
+    result = subprocess.run(cmd, check=False)
 
     if result.returncode == args.expected_exit_code:
         return 0

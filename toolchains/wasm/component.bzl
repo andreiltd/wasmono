@@ -84,6 +84,8 @@ load(
     "SharedLibraryInfo",
     "merge_shared_libraries",
 )
+load("@prelude//python_bootstrap:python_bootstrap.bzl", "PythonBootstrapToolchainInfo")
+load("@prelude//test:inject_test_run_info.bzl", "inject_test_run_info")
 
 load("@prelude//decls:common.bzl", buck = "buck")
 load("@prelude//os_lookup:defs.bzl", "Os", "OsLookup")
@@ -91,7 +93,7 @@ load(":bindgen.bzl", "WitBindgenInfo")
 load(":binaryen.bzl", "BinaryenInfo")
 load(":jco.bzl", "JcoInfo")
 load(":tools.bzl", "WasmToolsInfo")
-load(":transition.bzl", "wasm_transition")
+load(":transition.bzl", "wasm_transition", "wasm_transition_for_wasi")
 load(":wac.bzl", "WacInfo")
 load(":wasmtime.bzl", "WasmtimeInfo")
 load(":weval.bzl", "WevalInfo")
@@ -104,9 +106,9 @@ load(":wkg.bzl", "WkgInfo")
 WasmInfo = provider(
     # @unsorted-dict-items
     fields = {
-        "module": provider_field(typing.Any, default = None),     # single core .wasm artifact (or None)
-        "component": provider_field(typing.Any, default = None),  # single component .component.wasm artifact (or None)
-        "wit": provider_field(typing.Any, default = []),         # list of WIT artifacts (files or directories)
+        "module": provider_field(Artifact | None, default = None),     # single core .wasm artifact (or None)
+        "component": provider_field(Artifact | None, default = None),  # single component artifact (or None)
+        "wit": provider_field(list[Artifact], default = []),           # list of WIT artifacts (files or directories)
     },
     doc = "Provider for WASM-related files and metadata",
 )
@@ -114,13 +116,15 @@ WasmInfo = provider(
 WitBindingInfo = provider(
     # @unsorted-dict-items
     fields = {
-        "bindings": provider_field(typing.Any, default = None),
-        "language": provider_field(typing.Any, default = None),
-        "world": provider_field(typing.Any, default = None),
-        "wit": provider_field(typing.Any, default = []),
+        "bindings": provider_field(list[Artifact], default = []),
+        "language": provider_field(str),
+        "world": provider_field(str),
+        "wit": provider_field(list[Artifact], default = []),
     },
     doc = "Provider for WIT binding generation metadata",
 )
+
+_WIT_INPUT_ATTR = attrs.one_of(attrs.source(allow_directory = True), attrs.dep())
 
 def _world_to_snake_case(world: str) -> str:
     world_part = world.split(":")[-1]
@@ -172,6 +176,19 @@ def _components_from_deps(deps):
                     continue
     return results
 
+def _declared_components_from_deps(deps):
+    """Extract artifacts that callers explicitly identify as components."""
+    results = _components_from_deps(deps)
+    for dep in deps:
+        if WasmInfo in dep:
+            continue
+        if DefaultInfo in dep:
+            for out in dep[DefaultInfo].default_outputs:
+                if out.basename.endswith(".wasm"):
+                    results.append(out)
+                    continue
+    return results
+
 def _wat_files_from_deps(deps):
     """Extract .wat artifacts from configured deps."""
     results = []
@@ -190,6 +207,36 @@ def _all_wasm_files_from_deps(deps):
     wats = _wat_files_from_deps(deps)
     return modules + components + wats
 
+def _wit_artifacts_from_dep(dep):
+    """Extract WIT artifacts from a configured dependency."""
+    results = []
+
+    if WasmInfo in dep:
+        results.extend(dep[WasmInfo].wit)
+
+    if WitBindingInfo in dep:
+        results.extend(dep[WitBindingInfo].wit)
+
+    if not results and DefaultInfo in dep:
+        results.extend(dep[DefaultInfo].default_outputs)
+
+    return results
+
+def _wit_artifacts_from_inputs(inputs):
+    """Resolve a list of WIT source/dependency inputs to artifacts."""
+    results = []
+    for input in inputs:
+        if isinstance(input, Artifact):
+            results.append(input)
+        elif isinstance(input, Dependency):
+            results.extend(_wit_artifacts_from_dep(input))
+        else:
+            fail("Unexpected WIT input type: {}".format(type(input)))
+    return results
+
+def _wit_artifacts_from_optional_input(input):
+    return [] if input == None else _wit_artifacts_from_inputs([input])
+
 def _resolve_single_from_deps(deps, extractor, kind_desc):
     """Resolve exactly one artifact from deps using extractor; fail with helpful message."""
     artifacts = extractor(deps)
@@ -207,25 +254,42 @@ def _resolve_single_from_deps(deps, extractor, kind_desc):
 # ============================================================================
 
 def _wasm_component_impl(ctx: AnalysisContext) -> list[Provider]:
-    """Create a WASM component from a single core module and optional WIT interface."""
-    module_dep = ctx.attrs.module
-    module_file = _resolve_single_from_deps([module_dep], _wasm_modules_from_deps, "core wasm module")
+    """Create or declare a WASM component and optional WIT interface."""
+    if ctx.attrs.module and ctx.attrs.component:
+        fail("wasm_component: specify only one of 'module' or 'component'")
+    if not ctx.attrs.module and not ctx.attrs.component:
+        fail("wasm_component: one of 'module' or 'component' is required")
+    if ctx.attrs.component and ctx.attrs.adapter != None:
+        fail("wasm_component: 'adapter' only applies when 'module' is used")
+    if ctx.attrs.adapter != None and ctx.attrs.wasi == "wasip2" and not ctx.attrs.skip_validation:
+        fail("wasm_component: Preview 1 adapters require wasi = 'wasip1'. Set skip_validation = True only if the input is already compatible.")
 
-    wit = ctx.attrs.wit if ctx.attrs.wit else None
+    wits = _wit_artifacts_from_optional_input(ctx.attrs.wit)
+    if ctx.attrs.component:
+        component_file = _resolve_single_from_deps([ctx.attrs.component], _declared_components_from_deps, "component wasm")
+        return [
+            DefaultInfo(default_output = component_file),
+            WasmInfo(
+                module = None,
+                component = component_file,
+                wit = wits,
+            ),
+        ]
+
+    module_file = _resolve_single_from_deps([ctx.attrs.module], _wasm_modules_from_deps, "core wasm module")
     wasm_tools_info = ctx.attrs._wasm_tools_toolchain[WasmToolsInfo]
 
     # Build the component
     output_file = ctx.actions.declare_output("{}.component.wasm".format(ctx.label.name))
 
-    # Select adapter based on component type
-    adapter = wasm_tools_info.command_adapter if ctx.attrs.adapter == "command" else wasm_tools_info.reactor_adapter
-    adapter_arg = cmd_args(adapter, format = "wasi_snapshot_preview1={}")
-
     cmd = cmd_args(
         wasm_tools_info.component, "new", module_file,
-        "--adapt", adapter_arg,
         "-o", output_file.as_output(),
     )
+
+    if ctx.attrs.adapter != None:
+        adapter = wasm_tools_info.command_adapter if ctx.attrs.adapter == "command" else wasm_tools_info.reactor_adapter
+        cmd.add("--adapt", cmd_args(adapter, format = "wasi_snapshot_preview1={}"))
 
     if ctx.attrs.skip_validation:
         cmd.add("--skip-validation")
@@ -237,37 +301,48 @@ def _wasm_component_impl(ctx: AnalysisContext) -> list[Provider]:
         WasmInfo(
             module = None,
             component = output_file,
-            wit = [wit] if wit else [],
+            wit = wits,
         ),
     ]
 
 wasm_component = rule(
     impl = _wasm_component_impl,
     attrs = {
-        "module": attrs.transition_dep(
-            cfg = wasm_transition,
+        "module": attrs.option(
+            attrs.transition_dep(cfg = wasm_transition_for_wasi),
+            default = None,
             doc = "Single configured dependency that produces a core .wasm module",
         ),
-        "wit": attrs.option(
-            attrs.source(),
+        "component": attrs.option(
+            attrs.transition_dep(cfg = wasm_transition_for_wasi),
             default = None,
-            doc = "Optional single WIT file, directory, or .wasm WIT package to embed",
+            doc = "Single configured dependency that already produces a WebAssembly component",
+        ),
+        "wasi": attrs.option(
+            attrs.enum(["wasip1", "wasip2"]),
+            default = None,
+            doc = "WASI version used to configure the module dependency. Defaults to wasip1 when adapter is set, otherwise wasip2.",
+        ),
+        "wit": attrs.option(
+            _WIT_INPUT_ATTR,
+            default = None,
+            doc = "Optional single WIT file, directory, WIT package artifact, or target producing WIT metadata",
         ),
         "skip_validation": attrs.bool(
             default = False,
             doc = "Skip validation of the component (needed for WASI P3 async exports)",
         ),
-        "adapter": attrs.enum(
-            ["reactor", "command"],
-            default = "reactor",
-            doc = "WASI adapter type: 'reactor' for library components, 'command' for CLI components with wasi:cli/run",
+        "adapter": attrs.option(
+            attrs.enum(["reactor", "command"]),
+            default = None,
+            doc = "Optional WASI Preview 1 adapter: 'reactor' for library modules, 'command' for CLI modules",
         ),
         "_wasm_tools_toolchain": attrs.toolchain_dep(
             default = "toolchains//:wasm_tools",
             providers = [WasmToolsInfo],
         ),
     },
-    doc = "Creates a WASM Component from WASM module using 'wasm-tools component new'",
+    doc = "Creates a WASM Component from a core module, or declares an existing component",
 )
 
 # ============================================================================
@@ -452,7 +527,7 @@ def _create_cxx_providers(ctx: AnalysisContext, outputs: dict, world: str, langu
 def _build_wit_bindgen_cmd(wit_bindgen_info, language, wit_inputs, outdir, **kwargs):
     """Build base wit-bindgen command with common arguments.
 
-    wit_inputs may be a mix of source paths (strings) and artifact objects.
+    wit_inputs is a list of resolved artifacts.
     """
     language_map = {
         "rust": wit_bindgen_info.rust,
@@ -484,7 +559,9 @@ def _wit_bindgen_base_impl(ctx: AnalysisContext, language: str, outputs: dict, e
     """Generic wit-bindgen implementation that returns common providers."""
     # Gather WIT inputs and build the bindgen command
     wit_bindgen_info = ctx.attrs._wit_bindgen_toolchain[WitBindgenInfo]
-    all_wits = list(ctx.attrs.wit)
+    all_wits = _wit_artifacts_from_inputs(ctx.attrs.wit)
+    if not all_wits:
+        fail("wit_bindgen_{}: at least one WIT input is required".format(language))
 
     srcs, objs, headers = outputs["srcs"], outputs["objs"], outputs["headers"]
     outdir = cmd_args("--out-dir", srcs[0].as_output(), parent = 1)
@@ -523,15 +600,14 @@ def _wit_bindgen_base_impl(ctx: AnalysisContext, language: str, outputs: dict, e
         ),
     ]
 
-# Common attributes for all wit-bindgen rules
+# Common attributes for wit-bindgen source generation rules
 _wit_bindgen_common_attrs = {
     "wit": attrs.list(
-        attrs.source(),
+        _WIT_INPUT_ATTR,
         default = [],
-        doc = "WIT sources: files, directories, .wasm packages, or targets (e.g. wit_library, wasm_component)",
+        doc = "WIT inputs: files, directories, WIT package artifacts, or targets (e.g. wit_library, wasm_component)",
     ),
-    "world": attrs.option(
-        attrs.string(),
+    "world": attrs.string(
         doc = "World name (required to predictably generate output filenames at analysis time)",
     ),
     "async_config": attrs.list(
@@ -552,6 +628,9 @@ _wit_bindgen_common_attrs = {
         default = "toolchains//:wit_bindgen",
         providers = [WitBindgenInfo],
     ),
+}
+
+_wit_bindgen_cxx_attrs = _wit_bindgen_common_attrs | {
     "_cxx_toolchain": attrs.toolchain_dep(
         default = "toolchains//:cxx_wasi",
         providers = [CxxToolchainInfo],
@@ -590,14 +669,20 @@ def _wit_bindgen_c_impl(ctx: AnalysisContext) -> list[Provider]:
         ],
     }
 
-    providers = _wit_bindgen_base_impl(ctx, "c", outputs)
+    extra_args = []
+    if ctx.attrs.no_helpers:
+        extra_args.append("--no-helpers")
+    if ctx.attrs.string_encoding:
+        extra_args.extend(["--string-encoding", ctx.attrs.string_encoding])
+
+    providers = _wit_bindgen_base_impl(ctx, "c", outputs, extra_args = extra_args)
     providers.extend(_create_cxx_providers(ctx, outputs, snake, "c"))
 
     return providers
 
 wit_bindgen_c = rule(
     impl = _wit_bindgen_c_impl,
-    attrs = _wit_bindgen_common_attrs | {
+    attrs = _wit_bindgen_cxx_attrs | {
         "no_helpers": attrs.bool(default = False, doc = "Skip emitting component allocation helper functions"),
         "string_encoding": attrs.option(attrs.enum(["utf8", "utf16", "latin1"]), default = None, doc = "Set component string encoding"),
     },
@@ -623,7 +708,7 @@ def _wit_bindgen_cxx_impl(ctx: AnalysisContext) -> list[Provider]:
 
 wit_bindgen_cxx = rule(
     impl = _wit_bindgen_cxx_impl,
-    attrs = _wit_bindgen_common_attrs,
+    attrs = _wit_bindgen_cxx_attrs,
     doc = "Generates C++ bindings from WIT interface definitions using wit-bindgen"
 )
 
@@ -635,7 +720,9 @@ def _wit_to_markdown_impl(ctx: AnalysisContext) -> list[Provider]:
     wit_bindgen_info = ctx.attrs._wit_bindgen_toolchain[WitBindgenInfo]
     output_file = ctx.actions.declare_output("{}.md".format(ctx.label.name))
 
-    all_wits = list(ctx.attrs.wit)
+    all_wits = _wit_artifacts_from_inputs(ctx.attrs.wit)
+    if not all_wits:
+        fail("wit_to_markdown: at least one WIT input is required")
 
     cmd = cmd_args(wit_bindgen_info.markdown)
     for w in all_wits:
@@ -654,7 +741,7 @@ def _wit_to_markdown_impl(ctx: AnalysisContext) -> list[Provider]:
 wit_to_markdown = rule(
     impl = _wit_to_markdown_impl,
     attrs = {
-        "wit": attrs.list(attrs.source(), default = [], doc = "WIT sources: files, directories, or targets producing WIT artifacts"),
+        "wit": attrs.list(_WIT_INPUT_ATTR, default = [], doc = "WIT inputs: files, directories, WIT package artifacts, or targets producing WIT metadata"),
         "world": attrs.option(attrs.string(), default = None, doc = "Optional world name to document"),
         "_wit_bindgen_toolchain": attrs.toolchain_dep(default = "toolchains//:wit_bindgen", providers = [WitBindgenInfo]),
     },
@@ -765,6 +852,17 @@ wasm_plug = rule(
     doc = "Plugs exports of plug components into the imports of a socket component using 'wac plug'",
 )
 
+def _infer_wasm_package_format(requested_format: str, output_name: [None, str]) -> str:
+    if requested_format != "auto":
+        return requested_format
+    if output_name == None:
+        return "wasm"
+    if output_name.endswith(".wasm"):
+        return "wasm"
+    if output_name.endswith(".wit"):
+        return "wit"
+    fail("wasm_package: format = 'auto' can only infer outputs ending in .wasm or .wit; set format explicitly")
+
 def _wasm_package_impl(ctx: AnalysisContext) -> list[Provider]:
     """
     Download a package from a Wasm registry.
@@ -772,7 +870,7 @@ def _wasm_package_impl(ctx: AnalysisContext) -> list[Provider]:
     Behavior:
      - Downloads a package specified as 'namespace:name[@version]'
      - Supports both wasm and wit output formats
-     - Produces either a .wasm component or a wit directory depending on format
+     - Produces either a .wasm component/package file or a .wit interface file depending on format
     """
 
     if not ctx.attrs.package:
@@ -781,14 +879,13 @@ def _wasm_package_impl(ctx: AnalysisContext) -> list[Provider]:
     wkg_info = ctx.attrs._wkg_toolchain[WkgInfo]
 
     # Determine output format and filename
-    output_format = ctx.attrs.format
     package_name = ctx.attrs.package.replace(":", "_").replace("@", "_")
+    output_format = _infer_wasm_package_format(ctx.attrs.format, ctx.attrs.output)
 
     if output_format == "wit":
-        # WIT format produces a directory
-        output_file = ctx.actions.declare_output(package_name, dir = True)
+        output_name = ctx.attrs.output if ctx.attrs.output else "{}.wit".format(package_name)
+        output_file = ctx.actions.declare_output(output_name)
     else:
-        # WASM format (default or auto) produces a .wasm file
         if ctx.attrs.output:
             output_name = ctx.attrs.output
         else:
@@ -802,8 +899,8 @@ def _wasm_package_impl(ctx: AnalysisContext) -> list[Provider]:
     cmd.add("-o")
     cmd.add(output_file.as_output())
 
-    # Add format if specified and not "auto"
-    if output_format and output_format != "auto":
+    # Add format once Buck analysis has resolved any "auto" output inference.
+    if output_format:
         cmd.add("--format")
         cmd.add(output_format)
 
@@ -856,7 +953,7 @@ wasm_package = rule(
         "format": attrs.enum(
             ["auto", "wasm", "wit"],
             default = "auto",
-            doc = "Output format: 'auto' (default, detects from filename), 'wasm', or 'wit'",
+            doc = "Output format: 'auto' (default, infers .wasm or .wit output filenames), 'wasm', or 'wit'",
         ),
         "registry": attrs.option(
             attrs.string(),
@@ -895,39 +992,29 @@ def _wit_library_impl(ctx: AnalysisContext) -> list[Provider]:
     """
 
     wkg_info = ctx.attrs._wkg_toolchain[WkgInfo]
-    is_windows = ctx.attrs._exec_os_type[OsLookup].os == Os("windows")
+    python = ctx.attrs._python_bootstrap_toolchain[PythonBootstrapToolchainInfo].interpreter
 
     # Declare output directory to hold the WIT + resolved deps
     output_dir = ctx.actions.declare_output(ctx.label.name, dir = True)
+    wit_inputs = _wit_artifacts_from_inputs(ctx.attrs.wit)
+    if not wit_inputs:
+        fail("wit_library: at least one WIT input is required")
 
-    # Build a script that:
-    # 1. Creates the output directory
-    # 2. Copies source WIT files into the output directory
-    # 3. Runs wkg wit fetch to resolve dependencies
-    fetch_cmd = cmd_args(wkg_info.wit, "fetch", "-d", output_dir.as_output(), delimiter = " ")
+    cmd = cmd_args(
+        python,
+        ctx.attrs._wit_fetch_wrapper,
+        "--out-dir", output_dir.as_output(),
+    )
+    for src in wit_inputs:
+        cmd.add("--wit", src)
     if ctx.attrs.config:
-        fetch_cmd.add("--config", ctx.attrs.config)
+        cmd.add("--config", ctx.attrs.config)
     if ctx.attrs.cache:
-        fetch_cmd.add("--cache", ctx.attrs.cache)
+        cmd.add("--cache", ctx.attrs.cache)
+    cmd.add("--")
+    cmd.add(wkg_info.wit)
 
-    if is_windows:
-        script = cmd_args("cmd.exe", "/c")
-        all_parts = cmd_args(delimiter = " && ")
-        all_parts.add(cmd_args("mkdir", output_dir.as_output(), delimiter = " "))
-        for src in ctx.attrs.wit:
-            all_parts.add(cmd_args("copy", src, output_dir.as_output(), delimiter = " "))
-        all_parts.add(fetch_cmd)
-        script.add(all_parts)
-    else:
-        script = cmd_args("/bin/sh", "-c")
-        all_parts = cmd_args(delimiter = " && ")
-        all_parts.add(cmd_args("mkdir", "-p", output_dir.as_output(), delimiter = " "))
-        for src in ctx.attrs.wit:
-            all_parts.add(cmd_args("cp", src, output_dir.as_output(), delimiter = " "))
-        all_parts.add(fetch_cmd)
-        script.add(all_parts)
-
-    ctx.actions.run(script, category = "wit_library")
+    ctx.actions.run(cmd, category = "wit_library")
 
     return [
         DefaultInfo(default_output = output_dir),
@@ -942,8 +1029,8 @@ wit_library = rule(
     impl = _wit_library_impl,
     attrs = {
         "wit": attrs.list(
-            attrs.source(),
-            doc = "WIT source files whose dependencies should be resolved",
+            _WIT_INPUT_ATTR,
+            doc = "WIT files, directories, or targets whose dependencies should be resolved",
         ),
         "config": attrs.option(
             attrs.source(),
@@ -959,7 +1046,13 @@ wit_library = rule(
             default = "toolchains//:wkg",
             providers = [WkgInfo],
         ),
-        "_exec_os_type": buck.exec_os_type_arg(),
+        "_python_bootstrap_toolchain": attrs.default_only(attrs.toolchain_dep(
+            default = "toolchains//:python_bootstrap",
+            providers = [PythonBootstrapToolchainInfo],
+        )),
+        "_wit_fetch_wrapper": attrs.default_only(attrs.source(
+            default = "wasmono//tools:wit_fetch",
+        )),
     },
     doc = "Defines a WIT library with automatic dependency resolution via wkg wit fetch",
 )
@@ -1101,36 +1194,39 @@ wasm_compose = rule(
 def _wasm_componentize_js_impl(ctx: AnalysisContext) -> list[Provider]:
     """Build a WASM component from JavaScript source using jco componentize."""
     jco_info = ctx.attrs._jco_toolchain[JcoInfo]
+    is_windows = ctx.attrs._exec_os_type[OsLookup].os == Os("windows")
 
     output_file = ctx.actions.declare_output("{}.component.wasm".format(ctx.label.name))
 
-    cmd = cmd_args(jco_info.componentize)
-    cmd.add(ctx.attrs.src)
-    cmd.add("--wit")
-    cmd.add(ctx.attrs.wit)
+    jco_cmd = cmd_args(jco_info.componentize)
+    jco_cmd.add(ctx.attrs.src)
+    jco_cmd.add("--wit")
+    jco_cmd.add(ctx.attrs.wit)
 
     if ctx.attrs.world:
-        cmd.add("--world-name")
-        cmd.add(ctx.attrs.world)
+        jco_cmd.add("--world-name")
+        jco_cmd.add(ctx.attrs.world)
 
     for feature in ctx.attrs.disable:
-        cmd.add("--disable")
-        cmd.add(feature)
+        jco_cmd.add("--disable")
+        jco_cmd.add(feature)
 
-    cmd.add("-o")
-    cmd.add(output_file.as_output())
+    jco_cmd.add("-o")
+    jco_cmd.add(output_file.as_output())
 
-    # jco componentize uses TMPDIR for its internal StarlingMonkey working
-    # directory. Buck2 may not propagate a valid TMPDIR to local actions,
-    # causing jco to fail when resolving its generated index.js wrapper.
-    tmp_dir = ctx.actions.declare_output("jco_tmp", dir = True)
-    env = {
-        "TMPDIR": tmp_dir.as_output(),
-        "TEMP": tmp_dir.as_output(),
-        "TMP": tmp_dir.as_output(),
-    }
-        
-    ctx.actions.run(cmd, category = "wasm_componentize_js", env = env)
+    # componentize-js creates its own source workspace under TMPDIR and wizer
+    # fails to resolve ./index.js when that workspace is under Buck's
+    # project-relative scratch path. Use a host temp directory instead.
+    tmp_dir = "C:\\Windows\\Temp" if is_windows else "/tmp"
+    ctx.actions.run(
+        jco_cmd,
+        category = "wasm_componentize_js",
+        env = {
+            "TMPDIR": tmp_dir,
+            "TEMP": tmp_dir,
+            "TMP": tmp_dir,
+        },
+    )
 
     return [
         DefaultInfo(default_output = output_file),
@@ -1164,8 +1260,50 @@ wasm_componentize_js = rule(
             default = "toolchains//:jco",
             providers = [JcoInfo],
         ),
+        "_exec_os_type": buck.exec_os_type_arg(),
     },
     doc = "Creates a WASM Component from JavaScript source using 'jco componentize'",
+)
+
+def _wasm_jco_run_impl(ctx: AnalysisContext) -> list[Provider]:
+    """Run a WASI command component using jco run."""
+    component_file = _resolve_component_from_deps([ctx.attrs.component])
+    jco_info = ctx.attrs._jco_toolchain[JcoInfo]
+
+    cmd = cmd_args(jco_info.run)
+    for flag in ctx.attrs.jco_flags:
+        cmd.add(flag)
+    cmd.add(component_file)
+    for arg in ctx.attrs.args:
+        cmd.add(arg)
+
+    return [
+        DefaultInfo(default_output = component_file),
+        RunInfo(args = cmd),
+    ]
+
+wasm_jco_run = rule(
+    impl = _wasm_jco_run_impl,
+    attrs = {
+        "component": attrs.dep(
+            doc = "WASI command component to run with 'jco run'",
+        ),
+        "args": attrs.list(
+            attrs.string(),
+            default = [],
+            doc = "Arguments to pass to the component",
+        ),
+        "jco_flags": attrs.list(
+            attrs.string(),
+            default = [],
+            doc = "Extra jco run flags added before the component path",
+        ),
+        "_jco_toolchain": attrs.toolchain_dep(
+            default = "toolchains//:jco",
+            providers = [JcoInfo],
+        ),
+    },
+    doc = "Runs a WASI command component using 'jco run'. Use with 'buck2 run'.",
 )
 
 # ============================================================================
@@ -1274,7 +1412,7 @@ def _wasm_test_impl(ctx: AnalysisContext) -> list[Provider]:
     """Test a WASM component by running it via wasmtime and checking exit code."""
     component_file = _resolve_component_from_deps([ctx.attrs.component])
     wasmtime_info = ctx.attrs._wasmtime_toolchain[WasmtimeInfo]
-    is_windows = ctx.attrs._exec_os_type[OsLookup].os == Os("windows")
+    python = ctx.attrs._python_bootstrap_toolchain[PythonBootstrapToolchainInfo].interpreter
 
     cmd = _build_wasmtime_cmd(wasmtime_info, component_file, ctx.attrs)
 
@@ -1282,7 +1420,6 @@ def _wasm_test_impl(ctx: AnalysisContext) -> list[Provider]:
     needs_wrapper = expected != 0 or (ctx.attrs.isolate_dirs and len(ctx.attrs.wasi_dirs) > 0)
 
     if needs_wrapper:
-        python = "python" if is_windows else "python3"
         wrapper_cmd = cmd_args(python, ctx.attrs._test_wrapper)
         wrapper_cmd.add("--expected-exit-code", str(expected))
         wrapper_cmd.add(cmd_args([cmd_args("--isolate-dir", d) for d in ctx.attrs.wasi_dirs]))
@@ -1292,14 +1429,16 @@ def _wasm_test_impl(ctx: AnalysisContext) -> list[Provider]:
     else:
         test_cmd = cmd
 
-    return [
+    test_info = ExternalRunnerTestInfo(
+        type = "custom",
+        command = [test_cmd],
+        env = ctx.attrs.env,
+        labels = ctx.attrs.labels,
+        contacts = ctx.attrs.contacts,
+    )
+
+    return inject_test_run_info(ctx, test_info) + [
         DefaultInfo(default_output = component_file),
-        RunInfo(args = cmd),
-        ExternalRunnerTestInfo(
-            type = "custom",
-            command = [test_cmd],
-            env = ctx.attrs.env,
-        ),
     ]
 
 wasm_test = rule(
@@ -1319,7 +1458,11 @@ wasm_test = rule(
         "_test_wrapper": attrs.source(
             default = "wasmono//tools:test_wrapper",
         ),
-    }, **_WASMTIME_COMMON_ATTRS),
+        "_python_bootstrap_toolchain": attrs.default_only(attrs.toolchain_dep(
+            default = "toolchains//:python_bootstrap",
+            providers = [PythonBootstrapToolchainInfo],
+        )),
+    }, **_WASMTIME_COMMON_ATTRS) | buck.inject_test_env_arg() | buck.labels_arg() | buck.contacts_arg(),
     doc = "Tests a WASM component by running it with 'wasmtime run' and checking exit code. Use with 'buck2 test'.",
 )
 

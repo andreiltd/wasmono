@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=invalid-name
 """Detect version changes in a git diff and output tool=version pairs.
 
 Parses the git diff between the current HEAD and a base ref to find
@@ -29,9 +30,12 @@ TOOL_NAME_MAP = {
 
 
 def git_diff(base_ref: str, path: str) -> str:
+    """Return the git diff for a path against origin/<base_ref>."""
     result = subprocess.run(
         ["git", "diff", f"origin/{base_ref}..HEAD", "--", path],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     return result.stdout
 
@@ -62,12 +66,16 @@ def detect_wasi_sdk_changes(base_ref: str) -> list[tuple[str, str]]:
 
 
 def main():
+    """Print detected tool version updates."""
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <base_ref>", file=sys.stderr)
         sys.exit(1)
 
     base_ref = sys.argv[1]
-    updates = detect_demo_bzl_changes(base_ref) + detect_wasi_sdk_changes(base_ref)
+    updates = (
+        detect_demo_bzl_changes(base_ref)
+        + detect_wasi_sdk_changes(base_ref)
+    )
 
     if not updates:
         print("No version updates detected", file=sys.stderr)

@@ -26,9 +26,11 @@ cxx_wasi_toolchain(name = "cxx_wasi", distribution = ":wasi_sdk", visibility = [
 
 This creates all the WASM-related toolchain targets that wasmono rules expect:
 `node`, `wasm_tools`, `wit_bindgen`, `wac`, `wkg`, `jco`, `binaryen`, and
-`wasmtime`. Optionally, `weval` can be enabled by setting `weval_version`.
-The `cxx_wasi` toolchain must be added separately (shown above)
-because it requires its own `download_wasi_sdk` call.
+`wasmtime`. The jco and AssemblyScript setup paths use pinned npm packages but
+require network access in local-only Buck actions when enabled. Optionally,
+`weval` can be enabled by setting `weval_version`. The `cxx_wasi` toolchain must
+be added separately (shown above) because it requires its own
+`download_wasi_sdk` call.
 """
 
 load(":assemblyscript.bzl", "asc_toolchain", "install_asc")
@@ -74,8 +76,8 @@ def wasm_demo_toolchains(
         wkg_version: Version of wkg to download.
         binaryen_version: Version of Binaryen to download.
         wasmtime_version: Version of Wasmtime CLI to download.
-        node_version: Version of Node.js to download for hermetic jco/asc.
-            Set to None to use system jco instead (non-hermetic).
+        node_version: Version of Node.js to download for npm-installed jco/asc.
+            Set to None to use system jco instead.
         jco_version: Version of jco to install via npm. Only used when
             node_version is set.
         asc_version: Version of AssemblyScript compiler to install via npm.
@@ -108,7 +110,7 @@ def wasm_demo_toolchains(
     download_wasmtime(name = "wasmtime_dist", version = wasmtime_version, releases = r.get("wasmtime"))
     wasmtime_toolchain(name = "wasmtime", distribution = ":wasmtime_dist", visibility = ["PUBLIC"])
 
-    # jco hermetic if node_version is set, otherwise system
+    # jco via downloaded Node.js if node_version is set, otherwise system
     if node_version != None:
         download_node(name = "node_dist", version = node_version, releases = r.get("node"))
         node_toolchain(name = "node", distribution = ":node_dist", visibility = ["PUBLIC"])

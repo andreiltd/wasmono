@@ -9,3 +9,9 @@ export_file(
     src = "asc_build.py",
     visibility = ["PUBLIC"],
 )
+
+export_file(
+    name = "wit_fetch",
+    src = "wit_fetch.py",
+    visibility = ["PUBLIC"],
+)
