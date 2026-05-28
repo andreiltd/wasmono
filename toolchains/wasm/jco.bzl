@@ -7,11 +7,13 @@ Component Model.
 Two toolchain flavors are provided:
 
 - `system_jco_toolchain`: expects `jco` on the system PATH.
-- `jco_toolchain`: hermetic — uses a downloaded Node.js + npm-installed jco.
+- `jco_toolchain`: uses a downloaded Node.js, then runs npm install as a local-only
+  action. This pins the npm package version but still needs network access during
+  the Buck action.
 
 ## Examples
 
-### Hermetic (recommended)
+### Downloaded Node + npm install
 
 ```bzl
 load("//wasm:node.bzl", "download_node", "node_toolchain")
@@ -54,6 +56,7 @@ JcoInfo = provider(
     # @unsorted-dict-items
     fields = {
         "componentize": provider_field(RunInfo),
+        "run": provider_field(RunInfo),
     },
     doc = "Toolchain info provider for jco",
 )
@@ -79,10 +82,18 @@ def _system_jco_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
         language = lang,
     )
 
+    run = cmd_script(
+        actions = ctx.actions,
+        name = "jco_run",
+        cmd = cmd_args("jco", "run"),
+        language = lang,
+    )
+
     return [
         DefaultInfo(),
         JcoInfo(
             componentize = RunInfo(args = cmd_args(componentize)),
+            run = RunInfo(args = cmd_args(run)),
         ),
     ]
 
@@ -96,7 +107,7 @@ system_jco_toolchain = rule(
 )
 
 # ---------------------------------------------------------------------------
-# install_jco — rule that npm-installs jco using hermetic Node.js
+# install_jco — rule that npm-installs jco using downloaded Node.js
 # ---------------------------------------------------------------------------
 
 def _install_jco_impl(ctx: AnalysisContext) -> list[Provider]:
@@ -124,21 +135,21 @@ _install_jco = rule(
     attrs = {
         "node": attrs.exec_dep(
             providers = [NodeInfo],
-            doc = "Node.js distribution providing hermetic node/npm",
+            doc = "Downloaded Node.js distribution providing node/npm",
         ),
         "version": attrs.string(
             default = "1.17.0",
             doc = "jco version to install from npm",
         ),
     },
-    doc = "Install jco via npm using hermetic Node.js",
+    doc = "Install jco via npm using downloaded Node.js",
 )
 
 def install_jco(
         name: str,
         version: str = "1.17.0",
         node: str = "toolchains//:node_dist"):
-    """Install jco via npm using the hermetic Node.js distribution.
+    """Install jco via npm using the downloaded Node.js distribution.
 
     Args:
         name: Target name for the jco installation.
@@ -160,7 +171,7 @@ def _jco_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
     jco_dist = ctx.attrs.distribution[DefaultInfo].default_outputs[0]
     lang = ctx.attrs._exec_os_type[OsLookup].script
 
-    # Create a wrapper script: node <jco_workspace>/node_modules/.bin/jco componentize ...
+    # Create wrapper scripts: node <jco_workspace>/node_modules/.bin/jco <subcommand> ...
     jco_path = cmd_args(
         jco_dist,
         format = "{}/node_modules/@bytecodealliance/jco/src/jco.js",
@@ -173,10 +184,18 @@ def _jco_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
         language = lang,
     )
 
+    run = cmd_script(
+        actions = ctx.actions,
+        name = "jco_run",
+        cmd = cmd_args(node_info.node, jco_path, "run"),
+        language = lang,
+    )
+
     return [
         DefaultInfo(),
         JcoInfo(
             componentize = RunInfo(args = cmd_args(componentize)),
+            run = RunInfo(args = cmd_args(run)),
         ),
     ]
 

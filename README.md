@@ -60,11 +60,28 @@ wasm_component(
 )
 ```
 
+By default, `wasm_component` builds the module as WASI Preview 2 and runs
+`wasm-tools component new` without a Preview 1 adapter. Setting `adapter`
+selects a WASI Preview 1 adapter and configures the module as `wasip1` unless
+you set `wasi` explicitly:
+
+```python
+wasm_component(
+    name = "cli_component",
+    module = ":cli",
+    adapter = "command",
+)
+```
+
+If the dependency already produces a component, use `component` instead of
+`module` so downstream rules receive `WasmInfo` without re-running
+`component new`.
+
 ## Available Rules
 
 ### Component Rules
 
-- `wasm_component` - Create component from WASM module + WIT
+- `wasm_component` - Create a component from a WASM module, or declare an existing component
 - `wasm_component_link` - Link multiple components
 - `wasm_plug` - Compose components using plug pattern
 - `wasm_compose` - Compose components using WAC composition files
@@ -84,6 +101,7 @@ wasm_component(
 ### JavaScript
 
 - `wasm_componentize_js` - Build component from JavaScript (via jco)
+- `wasm_jco_run` - Run a WASI command component with `jco run`
 
 ### Package Management
 
@@ -116,11 +134,19 @@ cxx_binary(
     name = "validator",
     srcs = ["src/validator.cpp"],
     deps = [":validator_bindings"],
+    _cxx_toolchain = "toolchains//:cxx_wasi_p1",
+)
+
+wasm_opt(
+    name = "validator_opt",
+    input = ":validator",
+    optimization = "os",
 )
 
 wasm_component(
     name = "validator_component",
-    module = ":validator",
+    module = ":validator_opt",
+    adapter = "reactor",
     wit = "wit/validator.wit",
 )
 
@@ -134,9 +160,9 @@ wasm_plug(
 
 ## Toolchains
 
-All toolchains are **hermetic** - they download specific versions of tools rather than relying on system installations. This ensures reproducible builds across different environments.
+Most toolchains are **downloaded and checksum-pinned** rather than relying on system installations. The jco and AssemblyScript setup paths pin npm package versions but run `npm install` as local-only Buck actions, so they need network access unless you use an explicit system/preinstalled setup.
 
-Each toolchain is composed of two parts:
+Downloaded binary toolchains are composed of two parts:
 
 1. **Distribution**: Downloads and extracts the tool binary
 2. **Toolchain**: Provides convenient wrappers and subcommands
@@ -166,7 +192,7 @@ Available toolchains:
 - **wkg** - Package management (https://github.com/bytecodealliance/wasm-pkg-tools)
 - **wasi-sdk** - C/C++ wasi toolchain (https://github.com/WebAssembly/wasi-sdk)
 - **binaryen** - WASM optimizer / wasm-opt (https://github.com/WebAssembly/binaryen)
-- **jco** - JavaScript component toolchain (system install, https://github.com/bytecodealliance/jco)
+- **jco** - JavaScript component toolchain (pinned npm install or system install, https://github.com/bytecodealliance/jco)
 - **weval** - WASM partial evaluator (opt-in, https://github.com/bytecodealliance/weval)
 - **wasmtime** - WASM runtime, also provides wizer pre-initialization (https://github.com/bytecodealliance/wasmtime)
 
@@ -225,7 +251,10 @@ load("@wasmono//toolchains/cxx/wasi:defs.bzl", "download_wasi_sdk", "cxx_wasi_to
 
 _DEFAULT_TRIPLE = select({
     "config//os:wasi": select({
-        "config//cpu:wasm32": "wasm32-wasip2",
+        "config//cpu:wasm32": select({
+            "wasmono//wasm/constraints:wasip1": "wasm32-wasip1",
+            "DEFAULT": "wasm32-wasip2",
+        }),
     }),
     "config//os:linux": select({
         "config//cpu:arm64": "aarch64-unknown-linux-gnu",
@@ -253,6 +282,12 @@ wasm_demo_toolchains()
 
 download_wasi_sdk(name = "wasi_sdk", version = "27.0")
 cxx_wasi_toolchain(name = "cxx_wasi", distribution = ":wasi_sdk", visibility = ["PUBLIC"])
+cxx_wasi_toolchain(
+    name = "cxx_wasi_p1",
+    distribution = ":wasi_sdk",
+    target = "wasm32-wasip1",
+    visibility = ["PUBLIC"],
+)
 ```
 
 ### 3. Add `platforms/BUCK`
@@ -270,8 +305,12 @@ platform(
 ### 4. Use the rules
 
 ```python
-load("@wasmono//toolchains/wasm:component.bzl", "wasm_component", "wasm_compose")
+load("@wasmono//:defs.bzl", "wasm_component", "wasm_compose")
 ```
+
+You can still load implementation modules such as
+`@wasmono//toolchains/wasm:component.bzl` directly, but `@wasmono//:defs.bzl`
+is the stable public entrypoint for user-facing rules and setup macros.
 
 ## Custom Tool Releases
 

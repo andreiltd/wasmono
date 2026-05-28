@@ -226,6 +226,7 @@ def _cxx_wasi_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
     target_flags = ["-target", ctx.attrs.target] if ctx.attrs.target else ["-target", "wasm32-wasip2"]
     sysroot_flags = [cmd_args(dist_artifact, format = "--sysroot={}/{}".format("{}", dist.sysroot_path))]
     common_compiler_flags = target_flags + sysroot_flags
+    common_linker_flags = [] if linker_tool == "wasm-ld" else common_compiler_flags
 
     wasi_cc = _create_tool_script(ctx, dist_artifact, dist, "wasi_cc", "clang")
     wasi_cxx = _create_tool_script(ctx, dist_artifact, dist, "wasi_cxx", "clang++")
@@ -263,7 +264,7 @@ def _cxx_wasi_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
             link_style = LinkStyle(ctx.attrs.link_style),
             link_weight = 1,
             linker = RunInfo(args = cmd_args(wasi_ld)),
-            linker_flags = cmd_args(ctx.attrs.linker_flags),
+            linker_flags = cmd_args(common_linker_flags, ctx.attrs.linker_flags),
             object_file_extension = "o",
             shlib_interfaces = ShlibInterfacesMode("disabled"),
             shared_dep_runtime_ld_flags = ctx.attrs.shared_dep_runtime_ld_flags,

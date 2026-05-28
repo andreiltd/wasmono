@@ -13,20 +13,21 @@ cxx_binary(
     name = "validator",
     srcs = [":validator_bindings"] + ["src/validator.cpp"] ,
     deps =  [":validator_bindings"],
-    _cxx_toolchain = "toolchains//:cxx_wasi",
+    _cxx_toolchain = "toolchains//:cxx_wasi_p1",
 )
 
-# Optimize the WASM module before componentization
+# Optimize the WASM module before componentization.
 wasm_opt(
     name = "validator_opt",
     input = ":validator",
     optimization = "os",
 )
 
-# Create the WASM component
+# Create the WASM component.
 wasm_component(
     name = "validator_component",
     module = ":validator_opt",
+    adapter = "reactor",
     wit = "wit/validator.wit",
 )
 

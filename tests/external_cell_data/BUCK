@@ -1,10 +1,21 @@
 # Verify that wasmono rules load correctly as an external cell.
 # These loads exercise cross-package resolution within the external cell.
-load("@wasmono//toolchains/wasm:component.bzl", "wasm_component", "wasm_test")
-load("@wasmono//toolchains/wasm:assemblyscript.bzl", "assemblyscript_binary")
+load("@wasmono//:defs.bzl", "assemblyscript_binary", "wasm_component", "wasm_test")
+load(":transition_check.bzl", "wasip1_transition_check")
 
 genrule(
     name = "check",
     out = "ok.txt",
     cmd = "echo ok > $OUT",
+)
+
+genrule(
+    name = "transition_input",
+    out = "transition.txt",
+    cmd = "echo transition > $OUT",
+)
+
+wasip1_transition_check(
+    name = "check_wasip1_transition",
+    actual = ":transition_input",
 )

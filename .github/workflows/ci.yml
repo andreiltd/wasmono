@@ -36,6 +36,14 @@ jobs:
         if: runner.os == 'Windows'
         run: dotslash buck2 test //examples/...
 
+      - name: Build JavaScript component example (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: ./buck2 build //examples/validator/regex_js:regex_component
+
+      - name: Build JavaScript component example (Windows)
+        if: runner.os == 'Windows'
+        run: dotslash buck2 build //examples/validator/regex_js:regex_component
+
       - name: Test external cell compatibility (Linux/macOS)
         if: runner.os != 'Windows'
         run: python3 tests/test_external_cell.py

@@ -15,6 +15,7 @@ import tempfile
 
 
 def main():
+    """Build an AssemblyScript source file with the downloaded toolchain."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--node", required=True)
     parser.add_argument("--asc", required=True)
@@ -39,15 +40,22 @@ def main():
             else:
                 os.symlink(src_nm, dst_nm)
 
-            with open(os.path.join(build, "asconfig.json"), "w") as f:
-                json.dump(
-                    {
-                        "extends": "./node_modules/@assemblyscript/wasi-shim/asconfig.json"
-                    },
-                    f,
-                )
+            with open(
+                os.path.join(build, "asconfig.json"),
+                "w",
+                encoding="utf-8",
+            ) as f:
+                json.dump({
+                    "extends": (
+                        "./node_modules/@assemblyscript/wasi-shim/"
+                        "asconfig.json"
+                    )
+                }, f)
 
-        shutil.copy2(os.path.join(orig, args.src), os.path.join(build, "src_input.ts"))
+        shutil.copy2(
+            os.path.join(orig, args.src),
+            os.path.join(build, "src_input.ts"),
+        )
 
         os.chdir(build)
 

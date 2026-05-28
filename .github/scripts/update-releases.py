@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=invalid-name
 """Download release artifacts and update releases.bzl with new checksums.
 
 Usage:
@@ -13,11 +14,8 @@ Examples:
 """
 
 import hashlib
-import json
-import os
 import re
 import sys
-import textwrap
 import urllib.request
 from pathlib import Path
 
@@ -36,7 +34,10 @@ TOOLS = {
             "x86_64-macos": "x86_64-macos",
             "x86_64-windows": "x86_64-windows",
         },
-        "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v{version}/wasm-tools-{version}-{platform}.{ext}",
+        "url": (
+            "https://github.com/bytecodealliance/wasm-tools/releases/"
+            "download/v{version}/wasm-tools-{version}-{platform}.{ext}"
+        ),
         "ext": lambda p: "zip" if "windows" in p else "tar.gz",
     },
     "wit-bindgen": {
@@ -49,7 +50,10 @@ TOOLS = {
             "x86_64-macos": "x86_64-macos",
             "x86_64-windows": "x86_64-windows",
         },
-        "url": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v{version}/wit-bindgen-{version}-{platform}.{ext}",
+        "url": (
+            "https://github.com/bytecodealliance/wit-bindgen/releases/"
+            "download/v{version}/wit-bindgen-{version}-{platform}.{ext}"
+        ),
         "ext": lambda p: "zip" if "windows" in p else "tar.gz",
     },
     "wac": {
@@ -62,7 +66,10 @@ TOOLS = {
             "x86_64-pc-windows-gnu": "x86_64-pc-windows-gnu",
             "x86_64-unknown-linux-musl": "x86_64-unknown-linux-musl",
         },
-        "url": "https://github.com/bytecodealliance/wac/releases/download/v{version}/wac-cli-{platform}",
+        "url": (
+            "https://github.com/bytecodealliance/wac/releases/download/"
+            "v{version}/wac-cli-{platform}"
+        ),
         "ext": lambda p: "",
     },
     "wkg": {
@@ -75,7 +82,10 @@ TOOLS = {
             "x86_64-pc-windows-gnu": "x86_64-pc-windows-gnu",
             "x86_64-unknown-linux-gnu": "x86_64-unknown-linux-gnu",
         },
-        "url": "https://github.com/bytecodealliance/wasm-pkg-tools/releases/download/v{version}/wkg-{platform}",
+        "url": (
+            "https://github.com/bytecodealliance/wasm-pkg-tools/releases/"
+            "download/v{version}/wkg-{platform}"
+        ),
         "ext": lambda p: "",
     },
     "binaryen": {
@@ -88,7 +98,10 @@ TOOLS = {
             "x86_64-macos": "x86_64-macos",
             "x86_64-windows": "x86_64-windows",
         },
-        "url": "https://github.com/WebAssembly/binaryen/releases/download/version_{version}/binaryen-version_{version}-{platform}.tar.gz",
+        "url": (
+            "https://github.com/WebAssembly/binaryen/releases/download/"
+            "version_{version}/binaryen-version_{version}-{platform}.tar.gz"
+        ),
         "ext": lambda p: "tar.gz",
     },
     "wasmtime": {
@@ -100,7 +113,10 @@ TOOLS = {
             "x86_64-linux": "x86_64-linux",
             "x86_64-macos": "x86_64-macos",
         },
-        "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v{version}/wasmtime-v{version}-{platform}.tar.xz",
+        "url": (
+            "https://github.com/bytecodealliance/wasmtime/releases/"
+            "download/v{version}/wasmtime-v{version}-{platform}.tar.xz"
+        ),
         "ext": lambda p: "tar.xz",
     },
     "wasi-adapters": {
@@ -111,19 +127,37 @@ TOOLS = {
             "reactor": "wasi_snapshot_preview1.reactor.wasm",
             "command": "wasi_snapshot_preview1.command.wasm",
         },
-        "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v{version}/{artifact}",
+        "url": (
+            "https://github.com/bytecodealliance/wasmtime/releases/"
+            "download/v{version}/{artifact}"
+        ),
     },
     "node": {
         "file": "toolchains/node/releases.bzl",
         "extra_files": ["toolchains/wasm/node_releases.bzl"],
         "dict_name": "node_releases",
         "platforms": {
-            "aarch64-linux": {"node_platform": "linux-arm64", "prefix": "node-v{version}-linux-arm64"},
-            "aarch64-macos": {"node_platform": "darwin-arm64", "prefix": "node-v{version}-darwin-arm64"},
-            "x86_64-linux": {"node_platform": "linux-x64", "prefix": "node-v{version}-linux-x64"},
-            "x86_64-macos": {"node_platform": "darwin-x64", "prefix": "node-v{version}-darwin-x64"},
+            "aarch64-linux": {
+                "node_platform": "linux-arm64",
+                "prefix": "node-v{version}-linux-arm64",
+            },
+            "aarch64-macos": {
+                "node_platform": "darwin-arm64",
+                "prefix": "node-v{version}-darwin-arm64",
+            },
+            "x86_64-linux": {
+                "node_platform": "linux-x64",
+                "prefix": "node-v{version}-linux-x64",
+            },
+            "x86_64-macos": {
+                "node_platform": "darwin-x64",
+                "prefix": "node-v{version}-darwin-x64",
+            },
         },
-        "url": "https://nodejs.org/dist/v{version}/node-v{version}-{node_platform}.tar.xz",
+        "url": (
+            "https://nodejs.org/dist/v{version}/"
+            "node-v{version}-{node_platform}.tar.xz"
+        ),
     },
     "wasi-sdk": {
         "file": "toolchains/cxx/wasi/releases.bzl",
@@ -137,7 +171,10 @@ TOOLS = {
             "x86_64-macos": "x86_64-macos",
             "x86_64-windows": "x86_64-windows",
         },
-        "url": "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-{major}/wasi-sdk-{version}-{platform}.tar.gz",
+        "url": (
+            "https://github.com/WebAssembly/wasi-sdk/releases/download/"
+            "wasi-sdk-{major}/wasi-sdk-{version}-{platform}.tar.gz"
+        ),
         "ext": lambda p: "tar.gz",
     },
 }
@@ -146,7 +183,10 @@ TOOLS = {
 def sha256_url(url: str) -> str:
     """Download a URL and return its SHA256 hex digest."""
     print(f"  Downloading {url} ...", end=" ", flush=True)
-    req = urllib.request.Request(url, headers={"User-Agent": "update-releases/1.0"})
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": "update-releases/1.0"},
+    )
     h = hashlib.sha256()
     with urllib.request.urlopen(req) as resp:
         while True:
@@ -169,7 +209,10 @@ def build_entry_standard(tool_cfg: dict, version: str) -> dict:
             # Node.js style with extra fields
             node_platform = plat_val["node_platform"]
             prefix = plat_val["prefix"].format(version=version)
-            url = tool_cfg["url"].format(version=version, node_platform=node_platform)
+            url = tool_cfg["url"].format(
+                version=version,
+                node_platform=node_platform,
+            )
             sha = sha256_url(url)
             entry[plat_key] = {
                 "shasum": sha,
@@ -218,9 +261,13 @@ def format_entry(entry: dict, indent: int = 8) -> str:
     return "\n".join(lines)
 
 
-def insert_version_entry(file_path: Path, dict_name: str, version_key: str, entry: dict):
-    """Insert a new version entry at the top of the named dict in a .bzl file."""
-    content = file_path.read_text()
+def insert_version_entry(
+        file_path: Path,
+        dict_name: str,
+        version_key: str,
+        entry: dict) -> None:
+    """Insert a new version entry into a .bzl dict."""
+    content = file_path.read_text(encoding="utf-8")
 
     # Format the new entry
     entry_str = format_entry(entry)
@@ -236,13 +283,16 @@ def insert_version_entry(file_path: Path, dict_name: str, version_key: str, entr
 
     insert_pos = match.end()
     content = content[:insert_pos] + f"{new_block}\n" + content[insert_pos:]
-    file_path.write_text(content)
+    file_path.write_text(content, encoding="utf-8")
     print(f"  Inserted {version_key} into {dict_name} in {file_path}")
 
 
-def update_wasi_adapters_latest(file_path: Path, version: str, entry: dict):
-    """Update the 'latest' alias in wasi_adapters to point to the new version."""
-    content = file_path.read_text()
+def update_wasi_adapters_latest(
+        file_path: Path,
+        _version: str,
+        entry: dict) -> None:
+    """Update the 'latest' alias in wasi_adapters."""
+    content = file_path.read_text(encoding="utf-8")
 
     # Build the latest entry (same data, different key)
     latest_str = format_entry(entry)
@@ -252,13 +302,14 @@ def update_wasi_adapters_latest(file_path: Path, version: str, entry: dict):
     pattern = r'    "latest": \{[^}]*\{[^}]*\}[^}]*\{[^}]*\}\s*\},'
     if re.search(pattern, content):
         content = re.sub(pattern, new_latest, content)
-        file_path.write_text(content)
-        print(f'  Updated "latest" alias in wasi_adapters')
+        file_path.write_text(content, encoding="utf-8")
+        print('  Updated "latest" alias in wasi_adapters')
     else:
-        print(f'  WARNING: Could not find "latest" block in wasi_adapters')
+        print('  WARNING: Could not find "latest" block in wasi_adapters')
 
 
 def main():
+    """Update release metadata for a named tool version."""
     if len(sys.argv) != 3:
         print(__doc__)
         sys.exit(1)
@@ -271,7 +322,7 @@ def main():
         print(f"Available tools: {', '.join(TOOLS.keys())}")
         sys.exit(1)
 
-    # Handle wasmtime specially: update both wasmtime_releases and wasi_adapters
+    # Wasmtime also owns the wasi-adapters release artifacts.
     if tool_name == "wasmtime":
         print(f"\n=== Updating wasmtime {version} ===")
         cfg = TOOLS["wasmtime"]
@@ -283,7 +334,12 @@ def main():
         adapter_cfg = TOOLS["wasi-adapters"]
         adapter_entry = build_entry_wasi_adapters(adapter_cfg, version)
         version_key = f"v{version}"
-        insert_version_entry(file_path, adapter_cfg["dict_name"], version_key, adapter_entry)
+        insert_version_entry(
+            file_path,
+            adapter_cfg["dict_name"],
+            version_key,
+            adapter_entry,
+        )
         update_wasi_adapters_latest(file_path, version, adapter_entry)
         return
 
@@ -305,7 +361,12 @@ def main():
     for extra in cfg.get("extra_files", []):
         extra_path = REPO_ROOT / extra
         if extra_path.exists():
-            insert_version_entry(extra_path, cfg["dict_name"], version_key, entry)
+            insert_version_entry(
+                extra_path,
+                cfg["dict_name"],
+                version_key,
+                entry,
+            )
 
 
 if __name__ == "__main__":
