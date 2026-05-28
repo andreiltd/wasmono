@@ -58,7 +58,7 @@ def wasm_demo_toolchains(
         # renovate: datasource=github-releases depName=bytecodealliance/wasmtime
         wasmtime_version = "42.0.1",
         # renovate: datasource=node-version depName=node
-        node_version = "20.18.0",
+        node_version = "20.20.2",
         # renovate: datasource=npm depName=@bytecodealliance/jco
         jco_version = "1.17.0",
         asc_version = None,
