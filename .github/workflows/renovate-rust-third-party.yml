@@ -1,4 +1,4 @@
-name: Check Rust third-party generation
+name: Update Rust third-party generation
 
 on:
   pull_request:
@@ -9,23 +9,46 @@ on:
       - 'third-party/BUCK'
 
 jobs:
-  check-reindeer-output:
-    # Only enforce this on Renovate PRs until the project pins a Reindeer version
-    # that can safely regenerate third-party/BUCK in automation.
+  update-reindeer-output:
+    # Only run on Renovate PRs
     if: startsWith(github.head_ref, 'renovate/')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: renovate-autofix-${{ github.head_ref }}
+      cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
+          ref: ${{ github.head_ref }}
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check generated BUCK file was updated
+      - name: Install dotslash
+        uses: taiki-e/install-action@6ed6112eb9893c58dd600eebccdf6e77ab7bfa9c # v2
+        with:
+          tool: dotslash
+
+      - name: Update branch
+        run: git pull --rebase
+
+      - name: Regenerate third-party BUCK file
+        run: ./reindeer buckify
+
+      - name: Validate generated targets
+        run: './buck2 targets //third-party:'
+
+      - name: Commit and push
         run: |
-          changed_files="$(git diff --name-only "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}" -- third-party/Cargo.toml third-party/Cargo.lock third-party/BUCK)"
-          echo "$changed_files"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add third-party/BUCK
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: regenerate Rust third-party BUCK
 
-          if echo "$changed_files" | grep -Eq '^third-party/Cargo\.(toml|lock)$' &&
-             ! echo "$changed_files" | grep -qx 'third-party/BUCK'; then
-            echo "::error::Renovate changed third-party Cargo files without regenerating third-party/BUCK. Regenerate third-party/BUCK with Reindeer and commit it."
-            exit 1
+          Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+            git push
           fi

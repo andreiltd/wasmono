@@ -305,6 +305,28 @@ weval_releases = {
 }
 
 wasmtime_releases = {
+    "45.0.0": {
+        "aarch64-linux": {
+            "shasum": "4a27083ba8d3c64526b2d469f50e6539cb4c1dd9d08336e0d8953bca616737e3",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/wasmtime-v45.0.0-aarch64-linux.tar.xz",
+        },
+        "aarch64-macos": {
+            "shasum": "8c589a1feb6578ddfd76d4ee07bac551d7f3069d6cef9b2ae5e87e630b5198db",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/wasmtime-v45.0.0-aarch64-macos.tar.xz",
+        },
+        "x86_64-linux": {
+            "shasum": "9d92e6dc04630f617e0e5d532327a5a917ac4898587e07f4fb7a5fc7fffef760",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/wasmtime-v45.0.0-x86_64-linux.tar.xz",
+        },
+        "x86_64-macos": {
+            "shasum": "b01b421613d9e067103efb701cd66f436020b32f6e955125fac9eaf34fa5bce7",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/wasmtime-v45.0.0-x86_64-macos.tar.xz",
+        },
+        "x86_64-windows": {
+            "shasum": "edb9572c6e8ae7c51053af826a8bc85bf205a759c9e83ddb08a941b26e297706",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/wasmtime-v45.0.0-x86_64-windows.zip",
+        },
+    },
     "42.0.1": {
         "aarch64-linux": {
             "shasum": "fa9b7e09f49f75c17acf2c018a4286cdbeffb4c1f3ee9e72c48b6a42c1deceda",
@@ -348,6 +370,16 @@ wasmtime_releases = {
 }
 
 wasi_adapters = {
+    "v45.0.0": {
+        "reactor": {
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/wasi_snapshot_preview1.reactor.wasm",
+            "shasum": "83708658b7a3fdd1b15b11df451a4b0ce1853f78cebbb1219772c86b55732603",
+        },
+        "command": {
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/wasi_snapshot_preview1.command.wasm",
+            "shasum": "eb843effeade4b79d7b9e9bf0e21ba33c24c26d54f347414a1ba72bcb65fac74",
+        },
+    },
     "v42.0.1": {
         "reactor": {
             "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v42.0.1/wasi_snapshot_preview1.reactor.wasm",
@@ -380,12 +412,12 @@ wasi_adapters = {
     },
     "latest": {
         "reactor": {
-            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v42.0.1/wasi_snapshot_preview1.reactor.wasm",
-            "shasum": "90cd5af4ca2a441b5c65a55c3e229546cc5c58264689c84578cc9a6f75df72a3",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/wasi_snapshot_preview1.reactor.wasm",
+            "shasum": "83708658b7a3fdd1b15b11df451a4b0ce1853f78cebbb1219772c86b55732603",
         },
         "command": {
-            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v42.0.1/wasi_snapshot_preview1.command.wasm",
-            "shasum": "33192d6755408473c8783a2e32b26ef65e66ba5109c47698b3410b7ac065ea1e",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/wasi_snapshot_preview1.command.wasm",
+            "shasum": "eb843effeade4b79d7b9e9bf0e21ba33c24c26d54f347414a1ba72bcb65fac74",
         },
     },
 }

@@ -22,6 +22,15 @@ cargo binstall dotslash
 ./buck2 run //examples/http/runner:runner
 ```
 
+## Regenerate Rust third-party rules
+
+Rust dependencies are resolved in `third-party/Cargo.toml` and translated to
+Buck targets in `third-party/BUCK` with a pinned Reindeer binary:
+
+```bash
+./reindeer buckify
+```
+
 ## Features
 
 - **Component Building**: Create WASM components from Rust, C, and C++
