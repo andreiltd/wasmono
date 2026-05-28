@@ -3,10 +3,10 @@
 """Detect version changes in a git diff and output tool=version pairs.
 
 Parses the git diff between the current HEAD and a base ref to find
-version bumps in demo.bzl and cxx/wasi/releases.bzl.
+version bumps in demo.bzl and toolchains/BUCK.
 
 Usage:
-    python3 .github/scripts/detect-version-changes.py <base_ref>
+    python3 .github/scripts/detect-version-changes.py <base_commit>
 
 Output (stdout, one per line):
     wasm-tools=1.246.0
@@ -30,9 +30,9 @@ TOOL_NAME_MAP = {
 
 
 def git_diff(base_ref: str, path: str) -> str:
-    """Return the git diff for a path against origin/<base_ref>."""
+    """Return the git diff for a path against a base ref."""
     result = subprocess.run(
-        ["git", "diff", f"origin/{base_ref}..HEAD", "--", path],
+        ["git", "diff", f"{base_ref}..HEAD", "--", path],
         capture_output=True,
         text=True,
         check=True,
@@ -55,11 +55,11 @@ def detect_demo_bzl_changes(base_ref: str) -> list[tuple[str, str]]:
 
 
 def detect_wasi_sdk_changes(base_ref: str) -> list[tuple[str, str]]:
-    """Detect new version entries in cxx/wasi/releases.bzl."""
-    diff = git_diff(base_ref, "toolchains/cxx/wasi/releases.bzl")
+    """Detect WASI SDK version changes in toolchains/BUCK."""
+    diff = git_diff(base_ref, "toolchains/BUCK")
     updates = []
     for line in diff.splitlines():
-        m = re.match(r'^\+\s+"(\d[\d.]+)":\s*\{', line)
+        m = re.match(r'^\+\s+version\s*=\s*"([^"]+)"', line)
         if m:
             updates.append(("wasi-sdk", m.group(1)))
     return updates
@@ -68,7 +68,7 @@ def detect_wasi_sdk_changes(base_ref: str) -> list[tuple[str, str]]:
 def main():
     """Print detected tool version updates."""
     if len(sys.argv) != 2:
-        print(f"Usage: {sys.argv[0]} <base_ref>", file=sys.stderr)
+        print(f"Usage: {sys.argv[0]} <base_commit>", file=sys.stderr)
         sys.exit(1)
 
     base_ref = sys.argv[1]
@@ -76,10 +76,6 @@ def main():
         detect_demo_bzl_changes(base_ref)
         + detect_wasi_sdk_changes(base_ref)
     )
-
-    if not updates:
-        print("No version updates detected", file=sys.stderr)
-        sys.exit(1)
 
     for tool, version in updates:
         print(f"{tool}={version}")

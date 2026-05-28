@@ -1,0 +1,31 @@
+name: Check Rust third-party generation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'third-party/Cargo.toml'
+      - 'third-party/Cargo.lock'
+      - 'third-party/BUCK'
+
+jobs:
+  check-reindeer-output:
+    # Only enforce this on Renovate PRs until the project pins a Reindeer version
+    # that can safely regenerate third-party/BUCK in automation.
+    if: startsWith(github.head_ref, 'renovate/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check generated BUCK file was updated
+        run: |
+          changed_files="$(git diff --name-only "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}" -- third-party/Cargo.toml third-party/Cargo.lock third-party/BUCK)"
+          echo "$changed_files"
+
+          if echo "$changed_files" | grep -Eq '^third-party/Cargo\.(toml|lock)$' &&
+             ! echo "$changed_files" | grep -qx 'third-party/BUCK'; then
+            echo "::error::Renovate changed third-party Cargo files without regenerating third-party/BUCK. Regenerate third-party/BUCK with Reindeer and commit it."
+            exit 1
+          fi

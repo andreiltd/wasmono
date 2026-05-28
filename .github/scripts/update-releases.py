@@ -163,6 +163,8 @@ TOOLS = {
         "file": "toolchains/cxx/wasi/releases.bzl",
         "dict_name": "releases",
         "url_key": "url",
+        "artifact_version": lambda v: v if "." in v else f"{v}.0",
+        "prefix": "wasi-sdk-{version}-{platform}/",
         "platforms": {
             "arm64-linux": "arm64-linux",
             "arm64-macos": "arm64-macos",
@@ -223,8 +225,12 @@ def build_entry_standard(tool_cfg: dict, version: str) -> dict:
             # Standard: platform string used directly
             ext_fn = tool_cfg.get("ext", lambda p: "")
             ext = ext_fn(plat_val)
+            artifact_version = tool_cfg.get(
+                "artifact_version",
+                lambda v: v,
+            )(version)
             fmt_kwargs = {
-                "version": version,
+                "version": artifact_version,
                 "platform": plat_val,
                 "ext": ext,
                 "major": version.split(".")[0] if "." in version else version,
@@ -232,6 +238,8 @@ def build_entry_standard(tool_cfg: dict, version: str) -> dict:
             url = tool_cfg["url"].format(**fmt_kwargs)
             sha = sha256_url(url)
             platform_entry = {"shasum": sha, url_key: url}
+            if "prefix" in tool_cfg:
+                platform_entry["prefix"] = tool_cfg["prefix"].format(**fmt_kwargs)
             entry[plat_key] = platform_entry
 
     return entry
@@ -268,6 +276,10 @@ def insert_version_entry(
         entry: dict) -> None:
     """Insert a new version entry into a .bzl dict."""
     content = file_path.read_text(encoding="utf-8")
+    existing_entry = rf'^\s*"{re.escape(version_key)}":\s*\{{'
+    if re.search(existing_entry, content, flags=re.MULTILINE):
+        print(f"  {version_key} already exists in {dict_name} in {file_path}")
+        return
 
     # Format the new entry
     entry_str = format_entry(entry)

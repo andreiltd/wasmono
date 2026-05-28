@@ -14,11 +14,11 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^toolchains/cxx/wasi/releases\\.bzl$/"],
+      "managerFilePatterns": ["/^toolchains/BUCK$/"],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)(?: extractVersion=(?<extractVersion>[^\\n]+))?\\n\\s+\"(?<currentValue>[^\"]+)\":\\s*\\{"
+        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)(?: versioning=(?<versioning>[^\\s]+))?(?: extractVersion=(?<extractVersion>[^\\n]+))?\\n\\s+version\\s*=\\s*\"(?<currentValue>[^\"]+)\""
       ],
-      "versioningTemplate": "semver-coerced"
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver-coerced{{/if}}"
     }
   ],
   "packageRules": [

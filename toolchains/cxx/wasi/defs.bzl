@@ -101,6 +101,7 @@ WasiSdkReleaseInfo = provider(
         "version": provider_field(str),
         "url": provider_field(str),
         "sha256": provider_field(str),
+        "prefix": provider_field(str),
     },
 )
 
@@ -129,6 +130,10 @@ def _get_wasi_sdk_release(
         version = version,
         url = wasi_platform["url"],
         sha256 = wasi_platform["shasum"],
+        prefix = wasi_platform.get(
+            "prefix",
+            "wasi-sdk-{}-{}/".format(version, platform),
+        ),
     )
 
 WasiSdkDistributionInfo = provider(
@@ -137,6 +142,7 @@ WasiSdkDistributionInfo = provider(
         "version": provider_field(str),
         "arch": provider_field(str),
         "os": provider_field(str),
+        "prefix": provider_field(str),
         "bin_path": provider_field(str),
         "sysroot_path": provider_field(str),
     },
@@ -146,7 +152,7 @@ def _wasi_sdk_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
     version = ctx.attrs.version
     arch = ctx.attrs.arch
     os = ctx.attrs.os
-    prefix = "wasi-sdk-{}-{}-{}/".format(version, arch, os)
+    prefix = ctx.attrs.prefix
 
     return [
         ctx.attrs.dist[DefaultInfo],
@@ -154,6 +160,7 @@ def _wasi_sdk_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
             version = version,
             arch = arch,
             os = os,
+            prefix = prefix,
             bin_path = "{}bin".format(prefix),
             sysroot_path = "{}share/wasi-sysroot".format(prefix),
         ),
@@ -165,6 +172,7 @@ wasi_sdk_distribution = rule(
         "arch": attrs.string(),
         "dist": attrs.dep(providers = [DefaultInfo]),
         "os": attrs.string(),
+        "prefix": attrs.string(),
         "version": attrs.string(),
     },
 )
@@ -205,6 +213,7 @@ def download_wasi_sdk(
         version = version,
         arch = arch,
         os = os,
+        prefix = release.prefix,
     )
 
 def _tool_path(dist_artifact, dist_info, tool_name):
