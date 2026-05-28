@@ -52,11 +52,11 @@ def wasm_demo_toolchains(
         # renovate: datasource=github-releases depName=bytecodealliance/wac
         wac_version = "0.9.0",
         # renovate: datasource=github-releases depName=bytecodealliance/wasm-pkg-tools
-        wkg_version = "0.13.0",
+        wkg_version = "0.15.0",
         # renovate: datasource=github-releases depName=WebAssembly/binaryen versioning=loose extractVersion=^version_(?<version>\d+)$
         binaryen_version = "125",
         # renovate: datasource=github-releases depName=bytecodealliance/wasmtime
-        wasmtime_version = "42.0.1",
+        wasmtime_version = "45.0.0",
         # renovate: datasource=node-version depName=node
         node_version = "20.18.0",
         # renovate: datasource=npm depName=@bytecodealliance/jco

@@ -9,8 +9,10 @@ use wasmtime::component::{Component, Linker, ResourceTable};
 use wasmtime::{Config, Engine, Store};
 use wasmtime_wasi::{TrappableError, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 use wasmtime_wasi_http::p3::bindings::http::types::ErrorCode;
-use wasmtime_wasi_http::p3::{Request, RequestOptions, WasiHttpCtx, WasiHttpCtxView, WasiHttpView};
-use wasmtime_wasi_http::types::DEFAULT_FORBIDDEN_HEADERS;
+use wasmtime_wasi_http::p3::{
+    Request, RequestOptions, WasiHttpCtxView, WasiHttpHooks, WasiHttpView,
+};
+use wasmtime_wasi_http::{DEFAULT_FORBIDDEN_HEADERS, WasiHttpCtx};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -92,43 +94,31 @@ async fn run_http<E: Into<ErrorCode> + 'static>(
     .await?;
 
     let (req, io) = Request::from_http(req);
-    let (tx, rx) = tokio::sync::oneshot::channel();
-    let ((handle_result, ()), res) = tokio::try_join!(
-        async move {
-            store
-                .run_concurrent(async |store| {
-                    tokio::try_join!(
-                        async {
-                            let (res, task) = match service.handle(store, req).await? {
-                                Ok(pair) => pair,
-                                Err(err) => return Ok(Err(Some(err))),
-                            };
-                            _ = tx.send(
-                                store.with(|store| res.into_http(store, async { Ok(()) }))?,
-                            );
-                            task.block(store).await;
-                            Ok(Ok(()))
-                        },
-                        async { io.await.context("failed to consume request body") }
-                    )
-                })
-                .await?
-        },
-        async move {
-            let res = rx.await?;
-            let (parts, body) = res.into_parts();
-            let body = body.collect().await.context("failed to collect body")?;
-            Ok(http::Response::from_parts(parts, body))
-        }
-    )?;
-
-    Ok(handle_result.map(|()| res))
+    store
+        .run_concurrent(async |store| {
+            let (res, ()) = tokio::try_join!(
+                async {
+                    let res = match service.handle(store, req).await? {
+                        Ok(res) => res,
+                        Err(err) => return Ok(Err(Some(err))),
+                    };
+                    let res = store.with(|store| res.into_http(store, async { Ok(()) }))?;
+                    let (parts, body) = res.into_parts();
+                    let body = body.collect().await.context("failed to collect body")?;
+                    Ok(Ok(http::Response::from_parts(parts, body)))
+                },
+                async { io.await.context("failed to consume request body") }
+            )?;
+            Ok(res)
+        })
+        .await?
 }
 
 struct Ctx {
     table: ResourceTable,
     wasi: WasiCtx,
-    http: DefaultHttpCtx,
+    http: WasiHttpCtx,
+    http_hooks: DefaultHttpHooks,
 }
 
 impl Default for Ctx {
@@ -136,7 +126,8 @@ impl Default for Ctx {
         Self {
             table: ResourceTable::default(),
             wasi: WasiCtxBuilder::new().inherit_stdio().build(),
-            http: DefaultHttpCtx,
+            http: WasiHttpCtx::new(),
+            http_hooks: DefaultHttpHooks,
         }
     }
 }
@@ -155,14 +146,15 @@ impl WasiHttpView for Ctx {
         WasiHttpCtxView {
             ctx: &mut self.http,
             table: &mut self.table,
+            hooks: &mut self.http_hooks,
         }
     }
 }
 
 #[derive(Default)]
-struct DefaultHttpCtx;
+struct DefaultHttpHooks;
 
-impl WasiHttpCtx for DefaultHttpCtx {
+impl WasiHttpHooks for DefaultHttpHooks {
     fn is_forbidden_header(&mut self, name: &http::header::HeaderName) -> bool {
         DEFAULT_FORBIDDEN_HEADERS.contains(name)
     }

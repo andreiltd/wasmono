@@ -23,9 +23,9 @@
   ],
   "packageRules": [
     {
-      "description": "Pin wkg to 0.13.x for WASI P3 compatibility",
+      "description": "Pin wkg to 0.15.x for WASI P3 compatibility",
       "matchPackageNames": ["bytecodealliance/wasm-pkg-tools"],
-      "allowedVersions": ">=0.13.0 <0.14.0"
+      "allowedVersions": ">=0.15.0 <0.16.0"
     },
     {
       "description": "Exclude wasmtime pre-release and dev builds",

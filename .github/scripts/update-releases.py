@@ -112,12 +112,13 @@ TOOLS = {
             "aarch64-macos": "aarch64-macos",
             "x86_64-linux": "x86_64-linux",
             "x86_64-macos": "x86_64-macos",
+            "x86_64-windows": "x86_64-windows",
         },
         "url": (
             "https://github.com/bytecodealliance/wasmtime/releases/"
-            "download/v{version}/wasmtime-v{version}-{platform}.tar.xz"
+            "download/v{version}/wasmtime-v{version}-{platform}.{ext}"
         ),
-        "ext": lambda p: "tar.xz",
+        "ext": lambda p: "zip" if "windows" in p else "tar.xz",
     },
     "wasi-adapters": {
         "file": "toolchains/wasm/releases.bzl",
@@ -312,8 +313,8 @@ def update_wasi_adapters_latest(
 
     # Replace existing latest block
     pattern = r'    "latest": \{[^}]*\{[^}]*\}[^}]*\{[^}]*\}\s*\},'
-    if re.search(pattern, content):
-        content = re.sub(pattern, new_latest, content)
+    if re.search(pattern, content, flags=re.DOTALL):
+        content = re.sub(pattern, new_latest, content, flags=re.DOTALL)
         file_path.write_text(content, encoding="utf-8")
         print('  Updated "latest" alias in wasi_adapters')
     else:
