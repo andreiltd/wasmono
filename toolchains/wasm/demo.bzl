@@ -60,7 +60,7 @@ def wasm_demo_toolchains(
         # renovate: datasource=node-version depName=node
         node_version = "20.18.0",
         # renovate: datasource=npm depName=@bytecodealliance/jco
-        jco_version = "1.17.0",
+        jco_version = "1.20.0",
         asc_version = None,
         # renovate: datasource=github-releases depName=bytecodealliance/weval
         weval_version = None,
