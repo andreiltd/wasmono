@@ -333,7 +333,10 @@ cxx_wasi_toolchain = rule(
         "strip_debug_flags": attrs.option(attrs.list(attrs.arg()), default = None),
         "strip_non_global_flags": attrs.option(attrs.list(attrs.arg()), default = None),
         "target": attrs.option(attrs.string(), default = None),
-        "_cxx_internal_tools": attrs.default_only(attrs.dep(providers = [CxxInternalTools], default = "prelude//cxx/tools:internal_tools")),
+        "_cxx_internal_tools": attrs.default_only(attrs.exec_dep(
+            providers = [CxxInternalTools],
+            default = "prelude//cxx/tools:internal_tools",
+        )),
     },
     is_toolchain_rule = True,
 )

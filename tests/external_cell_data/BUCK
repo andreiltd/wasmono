@@ -1,6 +1,6 @@
 # Verify that wasmono rules load correctly as an external cell.
 # These loads exercise cross-package resolution within the external cell.
-load("@wasmono//:defs.bzl", "assemblyscript_binary", "wasm_component", "wasm_test")
+load("@wasmono//:defs.bzl", "wasm_component")
 load(":transition_check.bzl", "wasip1_transition_check")
 
 genrule(
@@ -18,4 +18,16 @@ genrule(
 wasip1_transition_check(
     name = "check_wasip1_transition",
     actual = ":transition_input",
+)
+
+cxx_binary(
+    name = "wasi_p1_command",
+    srcs = ["wasi_p1_command.c"],
+    _cxx_toolchain = "toolchains//:cxx_wasi_p1",
+)
+
+wasm_component(
+    name = "wasi_p1_command_component",
+    module = ":wasi_p1_command",
+    adapter = "command",
 )

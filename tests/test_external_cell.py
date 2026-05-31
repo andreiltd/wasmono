@@ -161,7 +161,12 @@ def main() -> int:
             # Build genrules to verify toolchain setup and transition refs.
             print("--- Building genrules to verify toolchain setup ---")
             res = _buck2(
-                ["build", "//:check", "//:check_wasip1_transition"],
+                [
+                    "build",
+                    "//:check",
+                    "//:check_wasip1_transition",
+                    "//:wasi_p1_command_component",
+                ],
                 workspace,
             )
             print(res.stderr)
@@ -169,7 +174,8 @@ def main() -> int:
             if res.returncode != 0:
                 print(
                     "FAILED: buck2 build "
-                    "//:check //:check_wasip1_transition"
+                    "//:check //:check_wasip1_transition "
+                    "//:wasi_p1_command_component"
                 )
                 print(res.stderr)
                 return 1
