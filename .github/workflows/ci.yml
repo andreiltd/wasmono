@@ -13,6 +13,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    environment: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'buildbuddy' || '' }}
+    env:
+      BUILDBUDDY_API_KEY: ${{ secrets.BUILDBUDDY_API_KEY }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
@@ -26,18 +29,18 @@ jobs:
         with:
           targets: wasm32-wasip1,wasm32-wasip2
 
-      - name: Capture rustc version for cache key
-        id: rustc
+      - name: Enable remote cache
+        if: ${{ env.BUILDBUDDY_API_KEY != '' }}
         shell: bash
-        run: echo "v=$(rustc --version | tr -c 'A-Za-z0-9._-' '_')" >> "$GITHUB_OUTPUT"
+        run: |
+          rustc_id=$(rustc --version | tr 'A-Z' 'a-z' | tr -c 'a-z0-9' '-')
+          cp .github/buildbuddy.buckconfig .buckconfig.local
+          echo "instance_name = wasmono-${{ matrix.os }}-${rustc_id}" >> .buckconfig.local
 
-      - name: Cache Buck2 outputs
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: buck-out
-          key: buck2-${{ matrix.os }}-${{ steps.rustc.outputs.v }}-${{ hashFiles('**/BUCK', '**/*.bzl') }}
-          restore-keys: |
-            buck2-${{ matrix.os }}-${{ steps.rustc.outputs.v }}-
+      - name: Force cache uploads from main
+        if: ${{ env.BUILDBUDDY_API_KEY != '' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        shell: bash
+        run: echo "BUCK2_TEST_FORCE_CACHE_UPLOAD=1" >> "$GITHUB_ENV"
 
       - name: Run tests (Linux/macOS)
         if: runner.os != 'Windows'

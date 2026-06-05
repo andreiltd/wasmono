@@ -1,7 +1,18 @@
+load("@prelude//platforms:defs.bzl", "host_configuration")
+load(":defs.bzl", "cache_execution_platform")
+
 platform(
     name = "wasm32_wasi",
     constraint_values = [
         "config//cpu/constraints:wasm32",
         "config//os/constraints:wasi",
     ],
+)
+
+cache_execution_platform(
+    name = "cache",
+    cpu_configuration = host_configuration.cpu,
+    os_configuration = host_configuration.os,
+    use_windows_path_separators = host_info().os.is_windows,
+    visibility = ["PUBLIC"],
 )
