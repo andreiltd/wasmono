@@ -36,7 +36,7 @@ be added separately (shown above) because it requires its own
 load(":assemblyscript.bzl", "asc_toolchain", "install_asc")
 load(":binaryen.bzl", "binaryen_toolchain", "download_binaryen")
 load(":bindgen.bzl", "download_wit_bindgen", "wit_bindgen_toolchain")
-load(":jco.bzl", "install_jco", "jco_toolchain", "system_jco_toolchain")
+load(":jco.bzl", "DEFAULT_JCO_VERSION", "install_jco", "jco_toolchain", "system_jco_toolchain")
 load(":tools.bzl", "download_wasm_tools", "wasm_tools_toolchain")
 load(":wac.bzl", "download_wac", "wac_toolchain")
 load(":wasmtime.bzl", "download_wasmtime", "wasmtime_toolchain")
@@ -58,9 +58,9 @@ def wasm_demo_toolchains(
         # renovate: datasource=github-releases depName=bytecodealliance/wasmtime
         wasmtime_version = "45.0.0",
         # renovate: datasource=node-version depName=node
-        node_version = "20.18.0",
+        node_version = "24.16.0",
         # renovate: datasource=npm depName=@bytecodealliance/jco
-        jco_version = "1.17.0",
+        jco_version = DEFAULT_JCO_VERSION,
         asc_version = None,
         # renovate: datasource=github-releases depName=bytecodealliance/weval
         weval_version = None,

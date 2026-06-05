@@ -39,6 +39,13 @@ load(
     _wit_library = "wit_library",
     _wit_to_markdown = "wit_to_markdown",
 )
+load(
+    "//toolchains/wasm:jco.bzl",
+    _JcoInfo = "JcoInfo",
+    _install_jco = "install_jco",
+    _jco_toolchain = "jco_toolchain",
+    _system_jco_toolchain = "system_jco_toolchain",
+)
 load("//toolchains/wasm:demo.bzl", _wasm_demo_toolchains = "wasm_demo_toolchains")
 load(
     "//toolchains/wasm:tools.bzl",
@@ -54,6 +61,7 @@ load(
 
 WasmInfo = _WasmInfo
 WitBindingInfo = _WitBindingInfo
+JcoInfo = _JcoInfo
 assemblyscript_binary = _assemblyscript_binary
 asc_toolchain = _asc_toolchain
 cxx_wasi_toolchain = _cxx_wasi_toolchain
@@ -63,7 +71,10 @@ download_wasi_sdk = _download_wasi_sdk
 host_arch = _host_arch
 host_os = _host_os
 install_asc = _install_asc
+install_jco = _install_jco
+jco_toolchain = _jco_toolchain
 node_toolchain = _node_toolchain
+system_jco_toolchain = _system_jco_toolchain
 wasm_component = _wasm_component
 wasm_component_link = _wasm_component_link
 wasm_componentize_js = _wasm_componentize_js

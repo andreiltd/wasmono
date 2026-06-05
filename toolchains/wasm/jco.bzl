@@ -19,9 +19,9 @@ Two toolchain flavors are provided:
 load("//wasm:node.bzl", "download_node", "node_toolchain")
 load("//wasm:jco.bzl", "install_jco", "jco_toolchain")
 
-download_node(name = "node_dist", version = "20.18.0")
+download_node(name = "node_dist", version = "24.16.0")
 node_toolchain(name = "node", distribution = ":node_dist", visibility = ["PUBLIC"])
-install_jco(name = "jco_dist", version = "1.17.0", node = ":node_dist")
+install_jco(name = "jco_dist", version = "1.20.0", node = ":node_dist")
 jco_toolchain(name = "jco", distribution = ":jco_dist", visibility = ["PUBLIC"])
 ```
 
@@ -35,9 +35,7 @@ system_jco_toolchain(name = "jco", visibility = ["PUBLIC"])
 
 load(
     "@prelude//os_lookup:defs.bzl",
-    "Os",
     "OsLookup",
-    "ScriptLanguage",
 )
 load(
     "@prelude//utils:cmd_script.bzl",
@@ -55,11 +53,14 @@ load(
 JcoInfo = provider(
     # @unsorted-dict-items
     fields = {
+        "jco": provider_field(RunInfo),
         "componentize": provider_field(RunInfo),
         "run": provider_field(RunInfo),
     },
     doc = "Toolchain info provider for jco",
 )
+
+DEFAULT_JCO_VERSION = "1.20.0"
 
 # ---------------------------------------------------------------------------
 # System jco toolchain (non-hermetic, requires jco on PATH)
@@ -92,6 +93,7 @@ def _system_jco_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
     return [
         DefaultInfo(),
         JcoInfo(
+            jco = RunInfo(args = cmd_args(jco)),
             componentize = RunInfo(args = cmd_args(componentize)),
             run = RunInfo(args = cmd_args(run)),
         ),
@@ -138,7 +140,7 @@ _install_jco = rule(
             doc = "Downloaded Node.js distribution providing node/npm",
         ),
         "version": attrs.string(
-            default = "1.17.0",
+            default = DEFAULT_JCO_VERSION,
             doc = "jco version to install from npm",
         ),
     },
@@ -147,13 +149,13 @@ _install_jco = rule(
 
 def install_jco(
         name: str,
-        version: str = "1.17.0",
+        version: str = DEFAULT_JCO_VERSION,
         node: str = "toolchains//:node_dist"):
     """Install jco via npm using the downloaded Node.js distribution.
 
     Args:
         name: Target name for the jco installation.
-        version: jco version to install (default "1.17.0").
+        version: jco version to install.
         node: Label of the node distribution (output of download_node).
     """
     _install_jco(
@@ -177,6 +179,13 @@ def _jco_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
         format = "{}/node_modules/@bytecodealliance/jco/src/jco.js",
     )
 
+    jco = cmd_script(
+        actions = ctx.actions,
+        name = "jco",
+        cmd = cmd_args(node_info.node, jco_path),
+        language = lang,
+    )
+
     componentize = cmd_script(
         actions = ctx.actions,
         name = "jco_componentize",
@@ -194,6 +203,7 @@ def _jco_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
     return [
         DefaultInfo(),
         JcoInfo(
+            jco = RunInfo(args = cmd_args(jco)),
             componentize = RunInfo(args = cmd_args(componentize)),
             run = RunInfo(args = cmd_args(run)),
         ),
