@@ -23,4 +23,5 @@ rust_binary(
 sh_test(
     name = "test",
     test = ":runner",
+    deps = ["//examples/http/composition:composed_multiple"],
 )
