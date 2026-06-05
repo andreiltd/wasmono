@@ -17,4 +17,5 @@ sh_test(
     name = "test",
     test = ":validator",
     args = ["Hello World"],
+    deps = ["//examples/validator/validator:validator_with_regex"],
 )
