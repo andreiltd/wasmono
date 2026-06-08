@@ -8,8 +8,9 @@ Two toolchain flavors are provided:
 
 - `system_jco_toolchain`: expects `jco` on the system PATH.
 - `jco_toolchain`: uses a downloaded Node.js, then runs npm install as a local-only
-  action. This pins the npm package version but still needs network access during
-  the Buck action.
+  action. This pins the npm package version and can optionally use a lockfile to
+  pin transitive dependencies, but still needs network access during the Buck
+  action.
 
 ## Examples
 
@@ -23,6 +24,17 @@ download_node(name = "node_dist", version = "24.16.0")
 node_toolchain(name = "node", distribution = ":node_dist", visibility = ["PUBLIC"])
 install_jco(name = "jco_dist", version = "1.20.0", node = ":node_dist")
 jco_toolchain(name = "jco", distribution = ":jco_dist", visibility = ["PUBLIC"])
+```
+
+### Downloaded Node + npm ci
+
+```bzl
+install_jco(
+    name = "jco_dist",
+    node = ":node_dist",
+    package_json = "jco/package.json",
+    package_lock = "jco/package-lock.json",
+)
 ```
 
 ### System
@@ -116,17 +128,34 @@ def _install_jco_impl(ctx: AnalysisContext) -> list[Provider]:
     node_info = ctx.attrs.node[NodeInfo]
     out_dir = ctx.actions.declare_output("jco_workspace", dir = True)
 
-    cmd = cmd_args(
-        node_info.npm,
-        "install",
-        "--prefix", out_dir.as_output(),
-        "--no-package-lock",
-        "@bytecodealliance/jco@{}".format(ctx.attrs.version),
-    )
+    if (ctx.attrs.package_json == None) != (ctx.attrs.package_lock == None):
+        fail("install_jco: package_json and package_lock must be provided together")
+
+    if ctx.attrs.package_json and ctx.attrs.package_lock:
+        if ctx.attrs._npm_ci_workspace == None:
+            fail("install_jco: _npm_ci_workspace is required when package_json and package_lock are provided")
+        cmd = cmd_args(
+            node_info.node,
+            ctx.attrs._npm_ci_workspace,
+            out_dir.as_output(),
+            ctx.attrs.package_json,
+            ctx.attrs.package_lock,
+            node_info.npm,
+        )
+        category = "npm_ci_jco"
+    else:
+        cmd = cmd_args(
+            node_info.npm,
+            "install",
+            "--prefix", out_dir.as_output(),
+            "--no-package-lock",
+            "@bytecodealliance/jco@{}".format(ctx.attrs.version),
+        )
+        category = "npm_install_jco"
 
     ctx.actions.run(
         cmd,
-        category = "npm_install_jco",
+        category = category,
         local_only = True,  # needs network access
     )
 
@@ -143,6 +172,17 @@ _install_jco = rule(
             default = DEFAULT_JCO_VERSION,
             doc = "jco version to install from npm",
         ),
+        "package_json": attrs.option(
+            attrs.source(),
+            default = None,
+            doc = "Optional package.json to use with npm ci",
+        ),
+        "package_lock": attrs.option(
+            attrs.source(),
+            default = None,
+            doc = "Optional package-lock.json to use with npm ci",
+        ),
+        "_npm_ci_workspace": attrs.option(attrs.source(), default = None),
     },
     doc = "Install jco via npm using downloaded Node.js",
 )
@@ -150,18 +190,31 @@ _install_jco = rule(
 def install_jco(
         name: str,
         version: str = DEFAULT_JCO_VERSION,
-        node: str = "toolchains//:node_dist"):
+        node: str = "toolchains//:node_dist",
+        package_json: [None, str] = None,
+        package_lock: [None, str] = None,
+        npm_ci_workspace: [None, str] = None):
     """Install jco via npm using the downloaded Node.js distribution.
 
     Args:
         name: Target name for the jco installation.
         version: jco version to install.
         node: Label of the node distribution (output of download_node).
+        package_json: Optional package.json to use with npm ci.
+        package_lock: Optional package-lock.json to use with npm ci.
+        npm_ci_workspace: Optional npm-ci helper; defaults to wasmono's helper
+            when package_json and package_lock are provided.
     """
+    if package_json != None and package_lock != None and npm_ci_workspace == None:
+        npm_ci_workspace = "wasmono//tools:npm_ci_workspace"
+
     _install_jco(
         name = name,
         version = version,
         node = node,
+        package_json = package_json,
+        package_lock = package_lock,
+        _npm_ci_workspace = npm_ci_workspace,
     )
 
 # ---------------------------------------------------------------------------

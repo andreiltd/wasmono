@@ -15,3 +15,9 @@ export_file(
     src = "wit_fetch.py",
     visibility = ["PUBLIC"],
 )
+
+export_file(
+    name = "npm_ci_workspace",
+    src = "npm_ci_workspace.mjs",
+    visibility = ["PUBLIC"],
+)
