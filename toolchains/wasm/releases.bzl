@@ -10,6 +10,10 @@ wasm_tools_releases = {
             "shasum": "d69043b13f8ad4bc07c993e9630e795a7f2c2af488e5688d15044a1448dfa139",
             "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.245.1/wasm-tools-1.245.1-aarch64-macos.tar.gz",
         },
+        "aarch64-windows": {
+            "shasum": "bfe53aad5a2fba45f62ba201e64e8cfd70c65d4393491771da52408d26ac425e",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.245.1/wasm-tools-1.245.1-aarch64-windows.zip",
+        },
         "x86_64-linux": {
             "shasum": "b171e20fd107e63e89ef6c936b5581597666a086af677d7818de92b7cdd5a86d",
             "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.245.1/wasm-tools-1.245.1-x86_64-linux.tar.gz",
@@ -31,6 +35,10 @@ wasm_tools_releases = {
         "aarch64-macos": {
             "shasum": "9926b364fb7b8b42806cfdcf652ff6f7609d9317d5b05646559967a615eb677b",
             "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.244.0/wasm-tools-1.244.0-aarch64-macos.tar.gz",
+        },
+        "aarch64-windows": {
+            "shasum": "0a47e781dda87a3b107df430ae92224abd90b3ce041c5a52874209a33454d869",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.244.0/wasm-tools-1.244.0-aarch64-windows.zip",
         },
         "x86_64-linux": {
             "shasum": "c3bf279c10e8ca37262773c829efd45423b5efeeb93ba1dc17baf25d9479074c",
@@ -314,6 +322,10 @@ wasmtime_releases = {
             "shasum": "8c589a1feb6578ddfd76d4ee07bac551d7f3069d6cef9b2ae5e87e630b5198db",
             "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/wasmtime-v45.0.0-aarch64-macos.tar.xz",
         },
+        "aarch64-windows": {
+            "shasum": "e080b367ecaba5fd6fb18fa9825af2e6f5c68ce0bc67d1df3941d9472fc31869",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/wasmtime-v45.0.0-aarch64-windows.zip",
+        },
         "x86_64-linux": {
             "shasum": "9d92e6dc04630f617e0e5d532327a5a917ac4898587e07f4fb7a5fc7fffef760",
             "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/wasmtime-v45.0.0-x86_64-linux.tar.xz",
@@ -336,6 +348,10 @@ wasmtime_releases = {
             "shasum": "69c56932453483f31cac7636f850bbd3bf884eaa7315b2c3b92857a2b0c6762e",
             "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v42.0.1/wasmtime-v42.0.1-aarch64-macos.tar.xz",
         },
+        "aarch64-windows": {
+            "shasum": "6e7f8e450eae1b72348433422a99671744cd1e61953c7d558a9cbe72b5929cc2",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v42.0.1/wasmtime-v42.0.1-aarch64-windows.zip",
+        },
         "x86_64-linux": {
             "shasum": "dd5253f3cb521bb094f9951c3d2c45c746b31e5723b07ce56f162ec9bab44d59",
             "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v42.0.1/wasmtime-v42.0.1-x86_64-linux.tar.xz",
@@ -357,6 +373,10 @@ wasmtime_releases = {
         "aarch64-macos": {
             "shasum": "f1db748d63bea4df0181d0170c232e1f423caf5ff816495f0153eb2cf6d57a1d",
             "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v41.0.3/wasmtime-v41.0.3-aarch64-macos.tar.xz",
+        },
+        "aarch64-windows": {
+            "shasum": "bb610724659d5e51167f785c78aedea625f21a4e07155b6f736a84666a593fad",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v41.0.3/wasmtime-v41.0.3-aarch64-windows.zip",
         },
         "x86_64-linux": {
             "shasum": "797d0a4f790e79c33ccaf43bfe413f077fff951e3a35145afe7b5a8324f14644",
