@@ -1,6 +1,28 @@
 """Release metadata for Node.js distributions."""
 
 node_releases = {
+    "26.3.1": {
+        "aarch64-linux": {
+            "shasum": "c021380e64d1314d1218ab1f31e0f5b0f28f1f54ac779ef72a16c2bda0ca5c30",
+            "url": "https://nodejs.org/dist/v26.3.1/node-v26.3.1-linux-arm64.tar.xz",
+            "prefix": "node-v26.3.1-linux-arm64",
+        },
+        "aarch64-macos": {
+            "shasum": "49aca22a8c2992c16688baa512a7b00c41a4608e9675fcaa81534767bf1116ce",
+            "url": "https://nodejs.org/dist/v26.3.1/node-v26.3.1-darwin-arm64.tar.xz",
+            "prefix": "node-v26.3.1-darwin-arm64",
+        },
+        "x86_64-linux": {
+            "shasum": "55647180e4ae58ffeaa3294e89aa4abda7c371dfbd64b44cbdb022980177aae0",
+            "url": "https://nodejs.org/dist/v26.3.1/node-v26.3.1-linux-x64.tar.xz",
+            "prefix": "node-v26.3.1-linux-x64",
+        },
+        "x86_64-macos": {
+            "shasum": "dac58e340c721332d331a44c9ee2e126b26632c42d3028eb2ceb5c3f218798fa",
+            "url": "https://nodejs.org/dist/v26.3.1/node-v26.3.1-darwin-x64.tar.xz",
+            "prefix": "node-v26.3.1-darwin-x64",
+        },
+    },
     "24.16.0": {
         "aarch64-linux": {
             "shasum": "524659219d6a207a7400f2bde15d19ba060ffbe0d32a8643319ad67e3bb64c78",

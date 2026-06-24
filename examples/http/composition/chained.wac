@@ -5,8 +5,8 @@ let srv-b = new my:service-b { ... };
 
 // Instantiate service_a (forwarding service), wiring its handler import to service_b
 let srv = new my:service-a {
-    "wasi:http/handler@0.3.0-rc-2026-03-15": srv-b["wasi:http/handler@0.3.0-rc-2026-03-15"], ...
+    "wasi:http/handler@0.3.0": srv-b["wasi:http/handler@0.3.0"], ...
 };
 
 // Export the forwarding service's handler
-export srv["my:service/handler"] as "wasi:http/handler@0.3.0-rc-2026-03-15";
+export srv["wasi:http/handler@0.3.0"] as "wasi:http/handler@0.3.0";

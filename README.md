@@ -292,7 +292,7 @@ system_rust_toolchain(
 # WASM toolchains
 wasm_demo_toolchains()
 
-download_wasi_sdk(name = "wasi_sdk", version = "27.0")
+download_wasi_sdk(name = "wasi_sdk", version = "33.0")
 cxx_wasi_toolchain(name = "cxx_wasi", distribution = ":wasi_sdk", visibility = ["PUBLIC"])
 cxx_wasi_toolchain(
     name = "cxx_wasi_p1",
@@ -368,7 +368,7 @@ load(":my_releases.bzl", "my_releases")
 load("@wasmono//toolchains/wasm:demo.bzl", "wasm_demo_toolchains")
 
 wasm_demo_toolchains(
-    wasm_tools_version = "1.250.0",
+    wasm_tools_version = "1.252.0",
     releases = my_releases,
 )
 ```

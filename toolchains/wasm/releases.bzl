@@ -1,6 +1,32 @@
 """A collection of release metadata for various Bytecode Alliance tools."""
 
 wasm_tools_releases = {
+    "1.252.0": {
+        "aarch64-linux": {
+            "shasum": "24583e8c4a4a7c9f4cadabb260935d2f8fe6d640abb87f8d323edb682dff772b",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.252.0/wasm-tools-1.252.0-aarch64-linux.tar.gz",
+        },
+        "aarch64-macos": {
+            "shasum": "c4c0f8560d996e47313aadf8df745e4d15eef38090e671384eafcb06d8d135fa",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.252.0/wasm-tools-1.252.0-aarch64-macos.tar.gz",
+        },
+        "aarch64-windows": {
+            "shasum": "758549e90169d1a4ebf901ebbed21794ea2ceedb426a62de8fad4ab3cf7fe160",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.252.0/wasm-tools-1.252.0-aarch64-windows.zip",
+        },
+        "x86_64-linux": {
+            "shasum": "097b1181d5b2bc3f2ebc44b4e72edf18308902023f1f1483a1a7dc1268ea988d",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.252.0/wasm-tools-1.252.0-x86_64-linux.tar.gz",
+        },
+        "x86_64-macos": {
+            "shasum": "108759377f47278ec598a994993bf10770d907dd935be5c436ca5cfc01bd008c",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.252.0/wasm-tools-1.252.0-x86_64-macos.tar.gz",
+        },
+        "x86_64-windows": {
+            "shasum": "c8e349ff1b39ec73c1ac6ed52c5728f90f939eb2d86b2bad69a77815a6f54c30",
+            "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.252.0/wasm-tools-1.252.0-x86_64-windows.zip",
+        },
+    },
     "1.245.1": {
         "aarch64-linux": {
             "shasum": "e01ef74b8e7b4a819d91122fdd87084fb25a938e4bfa4179cc5524b961468c85",
@@ -78,6 +104,28 @@ wasm_tools_releases = {
 }
 
 wit_bindgen_releases = {
+    "0.58.0": {
+        "aarch64-linux": {
+            "shasum": "f707272f597f21eada3e4ec534fcb08cb71dad375df8e52da1eacd7da7a13334",
+            "url": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.58.0/wit-bindgen-0.58.0-aarch64-linux.tar.gz",
+        },
+        "aarch64-macos": {
+            "shasum": "9b058d9b3a5b927de91f8f9f4e7cbce7f4dfa9d68f744e5ec71402d2990b2d2f",
+            "url": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.58.0/wit-bindgen-0.58.0-aarch64-macos.tar.gz",
+        },
+        "x86_64-linux": {
+            "shasum": "16831a7b18fed12f1b1ece26e458adb0c6c9ce0c7f3308e3f2fb7770f990a618",
+            "url": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.58.0/wit-bindgen-0.58.0-x86_64-linux.tar.gz",
+        },
+        "x86_64-macos": {
+            "shasum": "b7411c44b6cdbf1d26ecf315964f5a6d4d325ae52bdcaea8be9bca5c331704dc",
+            "url": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.58.0/wit-bindgen-0.58.0-x86_64-macos.tar.gz",
+        },
+        "x86_64-windows": {
+            "shasum": "f5c13bbb48067e5022972dd3e6d67b26eaf3209c2f6d2a6f6e5f6c3d15b2b806",
+            "url": "https://github.com/bytecodealliance/wit-bindgen/releases/download/v0.58.0/wit-bindgen-0.58.0-x86_64-windows.zip",
+        },
+    },
     "0.53.0": {
         "aarch64-linux": {
             "shasum": "5a3dfa4a8e26a01e29bbaae71da76f7cdc21c058eec7b514be93e33726e48733",
@@ -147,6 +195,28 @@ wit_bindgen_releases = {
 }
 
 wac_releases = {
+    "0.10.1": {
+        "aarch64-apple-darwin": {
+            "shasum": "f7315f2ebf764efc0c7e9688c854f972a8ac41ed1b68fd01f4192226307a8c53",
+            "url": "https://github.com/bytecodealliance/wac/releases/download/v0.10.1/wac-cli-aarch64-apple-darwin",
+        },
+        "aarch64-unknown-linux-musl": {
+            "shasum": "278e190120e2922a5bb0ad8d105a53ecb159e027e72cbd709da6ac1bb1980355",
+            "url": "https://github.com/bytecodealliance/wac/releases/download/v0.10.1/wac-cli-aarch64-unknown-linux-musl",
+        },
+        "x86_64-apple-darwin": {
+            "shasum": "f8f204c46e12a553bb38519abca7206a8bc4c41d6e387ed0820298530c50769c",
+            "url": "https://github.com/bytecodealliance/wac/releases/download/v0.10.1/wac-cli-x86_64-apple-darwin",
+        },
+        "x86_64-pc-windows-gnu": {
+            "shasum": "8f6ee43a1649532b75ef804d597c660a94369c229d6587e0721a1b2118835335",
+            "url": "https://github.com/bytecodealliance/wac/releases/download/v0.10.1/wac-cli-x86_64-pc-windows-gnu",
+        },
+        "x86_64-unknown-linux-musl": {
+            "shasum": "250c11762916ba733c7d22b62487580f21270ec9dde4f13460ea69d300e25406",
+            "url": "https://github.com/bytecodealliance/wac/releases/download/v0.10.1/wac-cli-x86_64-unknown-linux-musl",
+        },
+    },
     "0.9.0": {
         "aarch64-apple-darwin": {
             "shasum": "740c33d1732cac546d288c05d7343e9f32d6f91fed7c86f2bb1ab4f2250048c8",
@@ -194,6 +264,28 @@ wac_releases = {
 }
 
 wkg_releases = {
+    "0.15.1": {
+        "aarch64-apple-darwin": {
+            "shasum": "fef630e7fcc19962a94755b099e57bf7f4dbea50859e05741231e79955160417",
+            "url": "https://github.com/bytecodealliance/wasm-pkg-tools/releases/download/v0.15.1/wkg-aarch64-apple-darwin",
+        },
+        "aarch64-unknown-linux-gnu": {
+            "shasum": "cb6a3f593e30ea4342303510f23f1316b6050e85753fb4618d49cb5ff09b8d61",
+            "url": "https://github.com/bytecodealliance/wasm-pkg-tools/releases/download/v0.15.1/wkg-aarch64-unknown-linux-gnu",
+        },
+        "x86_64-apple-darwin": {
+            "shasum": "e86bb151759f282eca9450679bfc3c551ac365ed1a49f691bcc0c03fd27cd896",
+            "url": "https://github.com/bytecodealliance/wasm-pkg-tools/releases/download/v0.15.1/wkg-x86_64-apple-darwin",
+        },
+        "x86_64-pc-windows-gnu": {
+            "shasum": "6a9d765da43aa82b7d608ec1be691dd3d927e26602515b13d9c85c896f641fe7",
+            "url": "https://github.com/bytecodealliance/wasm-pkg-tools/releases/download/v0.15.1/wkg-x86_64-pc-windows-gnu",
+        },
+        "x86_64-unknown-linux-gnu": {
+            "shasum": "994cfcfac2d31e3514f4d30f5f7fabf8f7916458753cf81bec37464d41ec2a38",
+            "url": "https://github.com/bytecodealliance/wasm-pkg-tools/releases/download/v0.15.1/wkg-x86_64-unknown-linux-gnu",
+        },
+    },
     "0.15.0": {
         "aarch64-apple-darwin": {
             "shasum": "a9fff923a072d44a0b1f283af19cc5f99672f1382f24c6e534cdf44037b963e5",
@@ -263,6 +355,28 @@ wkg_releases = {
 }
 
 binaryen_releases = {
+    "130": {
+        "aarch64-linux": {
+            "shasum": "e6ae6e09ac40f4e14bc5be6f687c58e2995c84170013975fa641809dd3b480a0",
+            "url": "https://github.com/WebAssembly/binaryen/releases/download/version_130/binaryen-version_130-aarch64-linux.tar.gz",
+        },
+        "arm64-macos": {
+            "shasum": "79d3ab9f417d9e215f15f598f523d001a7d9ac1e59367e5c869fbdabd1cba72e",
+            "url": "https://github.com/WebAssembly/binaryen/releases/download/version_130/binaryen-version_130-arm64-macos.tar.gz",
+        },
+        "x86_64-linux": {
+            "shasum": "0a18362361ad05465118cd8eeb72edaeec89de6894bc283576ef4e07aa3babcc",
+            "url": "https://github.com/WebAssembly/binaryen/releases/download/version_130/binaryen-version_130-x86_64-linux.tar.gz",
+        },
+        "x86_64-macos": {
+            "shasum": "d3e2d1235b70c93c54b52eabc1625ea960965152218754f1f4eeb0f873c48e03",
+            "url": "https://github.com/WebAssembly/binaryen/releases/download/version_130/binaryen-version_130-x86_64-macos.tar.gz",
+        },
+        "x86_64-windows": {
+            "shasum": "cc09c874f4332d00aa32ab72745a9b98c9a172f795762f21d03e70638a3f7f4c",
+            "url": "https://github.com/WebAssembly/binaryen/releases/download/version_130/binaryen-version_130-x86_64-windows.tar.gz",
+        },
+    },
     "125": {
         "aarch64-linux": {
             "shasum": "d0382de3c189a7cbb9fdda93e2966f4557f6a00f201e2c4937c27ca01cead4fc",
@@ -313,6 +427,32 @@ weval_releases = {
 }
 
 wasmtime_releases = {
+    "46.0.0": {
+        "aarch64-linux": {
+            "shasum": "9b2fd1fb7d5e735f9d8d728ccd67f594eb3d8884c12d913dd3780987cbd7f1f6",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.0/wasmtime-v46.0.0-aarch64-linux.tar.xz",
+        },
+        "aarch64-macos": {
+            "shasum": "ab4bdab6ea42a3245cda91cdc6e0430491c4b78ecd643406fc1764ccddbdcd25",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.0/wasmtime-v46.0.0-aarch64-macos.tar.xz",
+        },
+        "aarch64-windows": {
+            "shasum": "a2c2e2a90c976a0b4218524e7e5f15b3497a9edab12dcdc39b13465c060acae3",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.0/wasmtime-v46.0.0-aarch64-windows.zip",
+        },
+        "x86_64-linux": {
+            "shasum": "2acc86341edd9ad8b6b8d0cbcea2bd0b1928b0b363c0a76f41ba56f33d9fd7bf",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.0/wasmtime-v46.0.0-x86_64-linux.tar.xz",
+        },
+        "x86_64-macos": {
+            "shasum": "781d8411d94723448af1c1bae79975a02acac8db26af3094c7bb81777b2bf762",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.0/wasmtime-v46.0.0-x86_64-macos.tar.xz",
+        },
+        "x86_64-windows": {
+            "shasum": "d2e4c33c2fea450f4e270dbeb861f7b1c28f5e7b725543cb7ffa73f74d454b26",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.0/wasmtime-v46.0.0-x86_64-windows.zip",
+        },
+    },
     "45.0.0": {
         "aarch64-linux": {
             "shasum": "4a27083ba8d3c64526b2d469f50e6539cb4c1dd9d08336e0d8953bca616737e3",
@@ -390,6 +530,16 @@ wasmtime_releases = {
 }
 
 wasi_adapters = {
+    "v46.0.0": {
+        "reactor": {
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.0/wasi_snapshot_preview1.reactor.wasm",
+            "shasum": "447b27d25221a12afd2c0732f7c150833aad9a2af42ae36ccff9270f4c7559bf",
+        },
+        "command": {
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.0/wasi_snapshot_preview1.command.wasm",
+            "shasum": "0d475815ef77c71516d3b2d8937891c99f0e0aa9917378539540ea3f66b247a9",
+        },
+    },
     "v45.0.0": {
         "reactor": {
             "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/wasi_snapshot_preview1.reactor.wasm",
@@ -432,12 +582,12 @@ wasi_adapters = {
     },
     "latest": {
         "reactor": {
-            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/wasi_snapshot_preview1.reactor.wasm",
-            "shasum": "83708658b7a3fdd1b15b11df451a4b0ce1853f78cebbb1219772c86b55732603",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.0/wasi_snapshot_preview1.reactor.wasm",
+            "shasum": "447b27d25221a12afd2c0732f7c150833aad9a2af42ae36ccff9270f4c7559bf",
         },
         "command": {
-            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/wasi_snapshot_preview1.command.wasm",
-            "shasum": "eb843effeade4b79d7b9e9bf0e21ba33c24c26d54f347414a1ba72bcb65fac74",
+            "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.0/wasi_snapshot_preview1.command.wasm",
+            "shasum": "0d475815ef77c71516d3b2d8937891c99f0e0aa9917378539540ea3f66b247a9",
         },
     },
 }

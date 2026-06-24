@@ -16,7 +16,7 @@ load("//wasm:tools.bzl", "download_wasm_tools", "wasm_tools_toolchain")
 
 download_wasm_tools(
     name = "wasm_tools_dist",
-    version = "1.239.0",
+    version = "1.252.0",
 )
 
 wasm_tools_toolchain(

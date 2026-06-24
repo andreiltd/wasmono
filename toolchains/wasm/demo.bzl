@@ -8,7 +8,7 @@ load("//cxx/wasi:defs.bzl", "download_wasi_sdk", "cxx_wasi_toolchain")
 
 wasm_demo_toolchains()
 
-download_wasi_sdk(name = "wasi_sdk", version = "27.0")
+download_wasi_sdk(name = "wasi_sdk", version = "33.0")
 cxx_wasi_toolchain(name = "cxx_wasi", distribution = ":wasi_sdk", visibility = ["PUBLIC"])
 ```
 
@@ -20,7 +20,7 @@ load("@wasmono//toolchains/cxx/wasi:defs.bzl", "download_wasi_sdk", "cxx_wasi_to
 
 wasm_demo_toolchains()
 
-download_wasi_sdk(name = "wasi_sdk", version = "27.0")
+download_wasi_sdk(name = "wasi_sdk", version = "33.0")
 cxx_wasi_toolchain(name = "cxx_wasi", distribution = ":wasi_sdk", visibility = ["PUBLIC"])
 ```
 
@@ -46,19 +46,19 @@ load(":node.bzl", "download_node", "node_toolchain")
 
 def wasm_demo_toolchains(
         # renovate: datasource=github-releases depName=bytecodealliance/wasm-tools
-        wasm_tools_version = "1.245.1",
+        wasm_tools_version = "1.252.0",
         # renovate: datasource=github-releases depName=bytecodealliance/wit-bindgen
-        wit_bindgen_version = "0.53.0",
+        wit_bindgen_version = "0.58.0",
         # renovate: datasource=github-releases depName=bytecodealliance/wac
-        wac_version = "0.9.0",
+        wac_version = "0.10.1",
         # renovate: datasource=github-releases depName=bytecodealliance/wasm-pkg-tools
-        wkg_version = "0.15.0",
+        wkg_version = "0.15.1",
         # renovate: datasource=github-releases depName=WebAssembly/binaryen versioning=loose extractVersion=^version_(?<version>\d+)$
-        binaryen_version = "125",
+        binaryen_version = "130",
         # renovate: datasource=github-releases depName=bytecodealliance/wasmtime
-        wasmtime_version = "45.0.0",
+        wasmtime_version = "46.0.0",
         # renovate: datasource=node-version depName=node
-        node_version = "24.16.0",
+        node_version = "26.3.1",
         # renovate: datasource=npm depName=@bytecodealliance/jco
         jco_version = DEFAULT_JCO_VERSION,
         asc_version = None,

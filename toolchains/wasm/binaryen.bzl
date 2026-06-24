@@ -16,7 +16,7 @@ load("//wasm:binaryen.bzl", "download_binaryen", "binaryen_toolchain")
 
 download_binaryen(
     name = "binaryen_dist",
-    version = "125",
+    version = "130",
 )
 
 binaryen_toolchain(
@@ -153,7 +153,7 @@ def download_binaryen(
 
     Args:
         name: The name for the distribution target.
-        version: The Binaryen version to download (e.g., "125").
+        version: The Binaryen version to download (e.g., "130").
         releases: Optional dict of custom releases to overlay on built-in
             releases. Format: ``{"version": {"platform": {"url": "...", "shasum": "..."}}}``.
         arch: Target architecture (defaults to host architecture).

@@ -11,7 +11,7 @@ load("//wasm:node.bzl", "download_node", "node_toolchain")
 
 download_node(
     name = "node_dist",
-    version = "20.18.0",
+    version = "26.3.1",
 )
 
 node_toolchain(
@@ -178,7 +178,7 @@ def download_node(
 
     Args:
         name: Target name for the node distribution.
-        version: Node.js version to download (e.g. "20.18.0").
+        version: Node.js version to download (e.g. "26.3.1").
         releases: Optional dict of custom releases to overlay on built-in
             releases. Format: ``{"version": {"platform": {"url": "...", "shasum": "...", "prefix": "..."}}}``.
         arch: Override host architecture detection.

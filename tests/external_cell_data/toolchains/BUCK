@@ -7,14 +7,36 @@ load("@prelude//toolchains:remote_test_execution.bzl", "remote_test_execution_to
 
 load("@wasmono//:defs.bzl", "cxx_wasi_toolchain", "download_wasi_sdk", "wasm_demo_toolchains")
 
+_SYSTEM_AR = select({
+    "config//os:windows": None,
+    "DEFAULT": "/usr/bin/ar",
+})
+
+_SYSTEM_CC = select({
+    "config//os:windows": None,
+    "DEFAULT": "/usr/bin/clang",
+})
+
+_SYSTEM_CXX = select({
+    "config//os:windows": None,
+    "DEFAULT": "/usr/bin/clang++",
+})
+
 system_genrule_toolchain(name = "genrule", visibility = ["PUBLIC"])
-system_cxx_toolchain(name = "cxx", visibility = ["PUBLIC"])
+system_cxx_toolchain(
+    name = "cxx",
+    archiver = _SYSTEM_AR,
+    compiler = _SYSTEM_CC,
+    cxx_compiler = _SYSTEM_CXX,
+    linker = _SYSTEM_CXX,
+    visibility = ["PUBLIC"],
+)
 remote_python_toolchain(name = "python", visibility = ["PUBLIC"])
 system_rust_toolchain(name = "rust", default_edition = "2024", visibility = ["PUBLIC"])
 
 wasm_demo_toolchains()
 
-download_wasi_sdk(name = "wasi_sdk", version = "27.0")
+download_wasi_sdk(name = "wasi_sdk", version = "33.0")
 cxx_wasi_toolchain(name = "cxx_wasi", distribution = ":wasi_sdk", visibility = ["PUBLIC"])
 cxx_wasi_toolchain(
     name = "cxx_wasi_p1",
