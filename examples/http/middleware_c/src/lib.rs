@@ -1,7 +1,7 @@
 #[allow(warnings)]
 mod bindings;
 
-use bindings::exports::my::logging_middleware::handler::Guest;
+use bindings::exports::wasi::http::handler::Guest;
 use bindings::wasi::http::handler;
 
 struct LoggingMiddleware;

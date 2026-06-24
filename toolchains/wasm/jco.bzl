@@ -20,9 +20,9 @@ Two toolchain flavors are provided:
 load("//wasm:node.bzl", "download_node", "node_toolchain")
 load("//wasm:jco.bzl", "install_jco", "jco_toolchain")
 
-download_node(name = "node_dist", version = "24.16.0")
+download_node(name = "node_dist", version = "26.3.1")
 node_toolchain(name = "node", distribution = ":node_dist", visibility = ["PUBLIC"])
-install_jco(name = "jco_dist", version = "1.20.0", node = ":node_dist")
+install_jco(name = "jco_dist", version = "1.24.3", node = ":node_dist")
 jco_toolchain(name = "jco", distribution = ":jco_dist", visibility = ["PUBLIC"])
 ```
 
@@ -72,7 +72,7 @@ JcoInfo = provider(
     doc = "Toolchain info provider for jco",
 )
 
-DEFAULT_JCO_VERSION = "1.20.0"
+DEFAULT_JCO_VERSION = "1.24.3"
 
 # ---------------------------------------------------------------------------
 # System jco toolchain (non-hermetic, requires jco on PATH)

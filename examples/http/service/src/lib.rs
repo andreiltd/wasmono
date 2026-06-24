@@ -14,12 +14,12 @@ impl Guest for Service {
     ) -> Result<handler::Response, handler::ErrorCode> {
         println!("                          [svcB] entered!");
 
-        let headers = request.get_headers().await;
+        let headers = request.get_headers();
 
         let (_, result_rx) = wit_future::new(|| Ok(()));
-        let (body, trailers) = Request::consume_body(request, result_rx).await;
+        let (body, trailers) = Request::consume_body(request, result_rx);
 
-        Ok(Response::new(headers, Some(body), trailers).await.0)
+        Ok(Response::new(headers, Some(body), trailers).0)
     }
 }
 

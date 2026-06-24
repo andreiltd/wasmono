@@ -8,7 +8,6 @@ wit_library(
 wit_bindgen_rust(
     name = "middleware_c_bindings",
     world = "my:logging-middleware/middleware",
-    async_config = ["all"],
     wit = [":wit_resolved"],
 )
 

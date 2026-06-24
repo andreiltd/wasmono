@@ -1,6 +1,6 @@
 package my:service;
 
 world service {
-    include wasi:http/service@0.3.0-rc-2026-03-15;
-    import wasi:http/handler@0.3.0-rc-2026-03-15;
+    include wasi:http/service@0.3.0;
+    import wasi:http/handler@0.3.0;
 }

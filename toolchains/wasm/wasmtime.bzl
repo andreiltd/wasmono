@@ -12,7 +12,7 @@ load("//wasm:wasmtime.bzl", "download_wasmtime", "wasmtime_toolchain")
 
 download_wasmtime(
     name = "wasmtime_dist",
-    version = "42.0.1",
+    version = "46.0.0",
 )
 
 wasmtime_toolchain(

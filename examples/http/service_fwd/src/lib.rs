@@ -1,8 +1,8 @@
 #[allow(warnings)]
 mod bindings;
 
-use bindings::exports::my::service::handler::Guest;
-use bindings::exports::my::service::handler;
+use bindings::exports::wasi::http::handler::Guest;
+use bindings::exports::wasi::http::handler;
 
 use crate::bindings::wasi::http::handler::handle;
 

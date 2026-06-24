@@ -1,6 +1,0 @@
-# The build script compiles gdbjit.c using cc::Build with versioned symbols.
-# It auto-detects the OS and sets CFG_TARGET_OS_windows on Windows.
-[buildscript.run]
-env = { OPT_LEVEL = "3" }
-rustc_link_search = true
-rustc_link_lib = true

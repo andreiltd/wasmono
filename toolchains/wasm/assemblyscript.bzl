@@ -12,7 +12,7 @@ downloaded Node.js but still needs network access during the Buck action.
 load("//wasm:node.bzl", "download_node", "node_toolchain")
 load("//wasm:assemblyscript.bzl", "install_asc", "asc_toolchain")
 
-download_node(name = "node_dist", version = "20.18.0")
+download_node(name = "node_dist", version = "26.3.1")
 node_toolchain(name = "node", distribution = ":node_dist", visibility = ["PUBLIC"])
 install_asc(name = "asc_dist", node = ":node_dist")
 asc_toolchain(name = "asc", distribution = ":asc_dist", visibility = ["PUBLIC"])

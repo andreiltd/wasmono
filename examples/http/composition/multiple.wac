@@ -5,16 +5,16 @@ let srv = new my:service { ... };
 
 // Chain: service -> middleware_c -> middleware_b -> middleware_a (outermost)
 let mdl-c = new my:middleware-c {
-    "wasi:http/handler@0.3.0-rc-2026-03-15": srv["wasi:http/handler@0.3.0-rc-2026-03-15"], ...
+    "wasi:http/handler@0.3.0": srv["wasi:http/handler@0.3.0"], ...
 };
 
 let mdl-b = new my:middleware-b {
-    "wasi:http/handler@0.3.0-rc-2026-03-15": mdl-c["my:logging-middleware/handler"], ...
+    "wasi:http/handler@0.3.0": mdl-c["wasi:http/handler@0.3.0"], ...
 };
 
 let mdl-a = new my:middleware-a {
-    "wasi:http/handler@0.3.0-rc-2026-03-15": mdl-b["my:logging-middleware/handler"], ...
+    "wasi:http/handler@0.3.0": mdl-b["wasi:http/handler@0.3.0"], ...
 };
 
 // Export the outermost middleware's handler
-export mdl-a["my:logging-middleware/handler"] as "wasi:http/handler@0.3.0-rc-2026-03-15";
+export mdl-a["wasi:http/handler@0.3.0"] as "wasi:http/handler@0.3.0";

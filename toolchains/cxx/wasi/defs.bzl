@@ -19,7 +19,7 @@ load("//cxx/wasi:defs.bzl", "download_wasi_sdk", "cxx_wasi_toolchain")
 
 download_wasi_sdk(
     name = "wasi-sdk",
-    version = "27.0",
+    version = "33.0",
 )
 
 cxx_wasi_toolchain(

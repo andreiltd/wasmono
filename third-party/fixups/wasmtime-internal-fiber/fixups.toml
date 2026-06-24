@@ -1,6 +1,11 @@
-# The build script compiles src/windows.c on Windows for fiber support.
-# On Linux/macOS it's a no-op (fiber uses inline assembly).
-[buildscript.run]
-env = { OPT_LEVEL = "3" }
-rustc_link_search = true
-rustc_link_lib = true
+# The build script only compiles src/windows.c through cc-rs on Windows.
+# Build that C helper directly with Buck to avoid cc-rs archive copy failures
+# on Windows runners; Unix platforms use inline assembly from the Rust sources.
+buildscript.run = false
+
+[['cfg(target_os = "windows")'.cxx_library]]
+name = "windows"
+srcs = ["src/windows.c"]
+compiler_flags = [
+    "-DVERSIONED_SUFFIX=_46_0_0",
+]
