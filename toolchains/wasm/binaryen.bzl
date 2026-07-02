@@ -45,8 +45,11 @@ load(
 )
 load(
     ":host.bzl",
-    "host_arch",
-    "host_os",
+    "host_platform",
+)
+load(
+    ":release_utils.bzl",
+    "get_release",
 )
 
 BinaryenReleaseInfo = provider(
@@ -62,23 +65,13 @@ def _get_binaryen_release(
         version: str,
         platform: str,
         custom_releases: [None, dict] = None) -> BinaryenReleaseInfo:
-    all_releases = binaryen_releases
-    if custom_releases != None:
-        all_releases = dict(binaryen_releases)
-        all_releases.update(custom_releases)
-
-    if not version in all_releases:
-        fail("Unknown Binaryen release version '{}'. Available versions: {}".format(
-            version,
-            ", ".join(all_releases.keys()),
-        ))
-    release = all_releases[version]
-    if not platform in release:
-        fail("Unsupported platform '{}'. Supported platforms: {}".format(
-            platform,
-            ", ".join(release.keys()),
-        ))
-    plat = release[platform]
+    plat = get_release(
+        binaryen_releases,
+        version,
+        platform,
+        custom_releases = custom_releases,
+        tool_name = "Binaryen",
+    )
     return BinaryenReleaseInfo(
         version = version,
         url = plat["url"],
@@ -159,14 +152,11 @@ def download_binaryen(
         arch: Target architecture (defaults to host architecture).
         os: Target OS (defaults to host OS).
     """
-    if arch == None:
-        arch = host_arch()
-    if os == None:
-        os = host_os(os_map = {
-            "linux": "linux",
-            "macos": "macos",
-            "windows": "windows",
-        })
+    arch, os = host_platform(arch, os, os_map = {
+        "linux": "linux",
+        "macos": "macos",
+        "windows": "windows",
+    })
 
     # Binaryen uses "arm64" instead of "aarch64" on macOS
     release_arch = "arm64" if arch == "aarch64" and os == "macos" else arch

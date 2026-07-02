@@ -46,8 +46,12 @@ load(
 )
 load(
     ":host.bzl",
-    "host_arch",
-    "host_os",
+    "host_platform",
+)
+load(
+    ":release_utils.bzl",
+    "get_release",
+    "get_release_version",
 )
 
 WasmToolsReleaseInfo = provider(
@@ -63,23 +67,13 @@ def _get_wasm_tools_release(
         version: str,
         platform: str,
         custom_releases: [None, dict] = None) -> WasmToolsReleaseInfo:
-    all_releases = wasm_tools_releases
-    if custom_releases != None:
-        all_releases = dict(wasm_tools_releases)
-        all_releases.update(custom_releases)
-
-    if not version in all_releases:
-        fail("Unknown wasm-tools release version '{}'. Available versions: {}".format(
-            version,
-            ", ".join(all_releases.keys()),
-        ))
-    wasm_tools_version = all_releases[version]
-    if not platform in wasm_tools_version:
-        fail("Unsupported platform '{}'. Supported platforms: {}".format(
-            platform,
-            ", ".join(wasm_tools_version.keys()),
-        ))
-    wasm_tools_platform = wasm_tools_version[platform]
+    wasm_tools_platform = get_release(
+        wasm_tools_releases,
+        version,
+        platform,
+        custom_releases = custom_releases,
+        tool_name = "wasm-tools",
+    )
     return WasmToolsReleaseInfo(
         version = version,
         url = wasm_tools_platform["url"],
@@ -160,10 +154,7 @@ def download_wasm_tools(
         arch: Target architecture (defaults to host architecture).
         os: Target OS (defaults to host OS).
     """
-    if arch == None:
-        arch = host_arch()
-    if os == None:
-        os = host_os()
+    arch, os = host_platform(arch, os)
 
     archive_name = name + "-archive"
     release = _get_wasm_tools_release(version, "{}-{}".format(arch, os), custom_releases = releases)
@@ -174,17 +165,12 @@ def download_wasm_tools(
         sha256 = release.sha256,
     )
 
-    all_adapters = wasi_adapters
-    if adapter_releases != None:
-        all_adapters = dict(wasi_adapters)
-        all_adapters.update(adapter_releases)
-
-    if adapter_version not in all_adapters:
-        fail("Unknown WASI adapter version '{}'. Available versions: {}".format(
-            adapter_version,
-            ", ".join(all_adapters.keys()),
-        ))
-    adapter_info = all_adapters[adapter_version]
+    adapter_info = get_release_version(
+        wasi_adapters,
+        adapter_version,
+        custom_releases = adapter_releases,
+        tool_name = "WASI adapter",
+    )
 
     native.http_file(
         name = name + "_reactor_adapter",

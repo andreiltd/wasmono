@@ -5,6 +5,8 @@ with configurable OS name mappings since different tools use different naming
 conventions (e.g., "linux" vs "unknown-linux-musl" vs "unknown-linux-gnu").
 """
 
+load("@prelude//utils:expect.bzl", "expect")
+
 def host_arch() -> str:
     """Detect the host CPU architecture.
 
@@ -40,7 +42,16 @@ def host_os(os_map: [None, dict] = None) -> str:
         fail("Unsupported host OS.")
 
     if os_map:
-        if key not in os_map:
-            fail("No OS mapping for '{}'. Available: {}".format(key, ", ".join(os_map.keys())))
+        expect(key in os_map, "No OS mapping for '{}'. Available: {}", key, ", ".join(os_map.keys()))
         return os_map[key]
     return key
+
+def host_platform(
+        arch: [None, str] = None,
+        os: [None, str] = None,
+        os_map: [None, dict] = None) -> (str, str):
+    if arch == None:
+        arch = host_arch()
+    if os == None:
+        os = host_os(os_map)
+    return arch, os

@@ -16,8 +16,11 @@ load(
 )
 load(
     ":host.bzl",
-    "host_arch",
-    "host_os",
+    "host_platform",
+)
+load(
+    ":release_utils.bzl",
+    "get_release",
 )
 
 _WKG_OS_MAP = {
@@ -40,25 +43,13 @@ def _get_wkg_release(
         version: str,
         platform: str,
         custom_releases: [None, dict] = None) -> WkgReleaseInfo:
-    all_releases = wkg_releases
-    if custom_releases != None:
-        all_releases = dict(wkg_releases)
-        all_releases.update(custom_releases)
-
-    if not version in all_releases:
-        fail("Unknown wkg release version '{}'. Available versions: {}".format(
-            version,
-            ", ".join(all_releases.keys()),
-        ))
-
-    ver = all_releases[version]
-    if not platform in ver:
-        fail("Unsupported platform '{}'. Supported platforms: {}".format(
-            platform,
-            ", ".join(ver.keys()),
-        ))
-
-    info = ver[platform]
+    info = get_release(
+        wkg_releases,
+        version,
+        platform,
+        custom_releases = custom_releases,
+        tool_name = "wkg",
+    )
     return WkgReleaseInfo(
         version = version,
         url = info["url"],
@@ -123,10 +114,7 @@ def download_wkg(
         arch: Target architecture (defaults to host architecture).
         os: Target OS (defaults to host OS).
     """
-    if arch == None:
-        arch = host_arch()
-    if os == None:
-        os = host_os(_WKG_OS_MAP)
+    arch, os = host_platform(arch, os, _WKG_OS_MAP)
 
     release = _get_wkg_release(version, "{}-{}".format(arch, os), custom_releases = releases)
 
