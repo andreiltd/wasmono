@@ -46,8 +46,11 @@ load(
 )
 load(
     ":host.bzl",
-    "host_arch",
-    "host_os",
+    "host_platform",
+)
+load(
+    ":release_utils.bzl",
+    "get_release",
 )
 
 WitBindgenReleaseInfo = provider(
@@ -63,23 +66,13 @@ def _get_wit_bindgen_release(
         version: str,
         platform: str,
         custom_releases: [None, dict] = None) -> WitBindgenReleaseInfo:
-    all_releases = wit_bindgen_releases
-    if custom_releases != None:
-        all_releases = dict(wit_bindgen_releases)
-        all_releases.update(custom_releases)
-
-    if not version in all_releases:
-        fail("Unknown wit-bindgen release version '{}'. Available versions: {}".format(
-            version,
-            ", ".join(all_releases.keys()),
-        ))
-    release = all_releases[version]
-    if not platform in release:
-        fail("Unsupported platform '{}'. Supported platforms: {}".format(
-            platform,
-            ", ".join(release.keys()),
-        ))
-    plat = release[platform]
+    plat = get_release(
+        wit_bindgen_releases,
+        version,
+        platform,
+        custom_releases = custom_releases,
+        tool_name = "wit-bindgen",
+    )
     return WitBindgenReleaseInfo(
         version = version,
         url = plat["url"],
@@ -149,10 +142,7 @@ def download_wit_bindgen(
         arch: Target architecture (defaults to host architecture).
         os: Target OS (defaults to host OS).
     """
-    if arch == None:
-        arch = host_arch()
-    if os == None:
-        os = host_os()
+    arch, os = host_platform(arch, os)
 
     archive_name = name + "-archive"
     release = _get_wit_bindgen_release(version, "{}-{}".format(arch, os), custom_releases = releases)

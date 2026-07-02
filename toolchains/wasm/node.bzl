@@ -32,8 +32,11 @@ load(
 )
 load(
     ":host.bzl",
-    "host_arch",
-    "host_os",
+    "host_platform",
+)
+load(
+    ":release_utils.bzl",
+    "get_release",
 )
 
 NodeReleaseInfo = provider(
@@ -50,23 +53,13 @@ def _get_node_release(
         version: str,
         platform: str,
         custom_releases: [None, dict] = None) -> NodeReleaseInfo:
-    all_releases = node_releases
-    if custom_releases != None:
-        all_releases = dict(node_releases)
-        all_releases.update(custom_releases)
-
-    if not version in all_releases:
-        fail("Unknown Node.js release version '{}'. Available versions: {}".format(
-            version,
-            ", ".join(all_releases.keys()),
-        ))
-    ver = all_releases[version]
-    if not platform in ver:
-        fail("Unsupported platform '{}'. Supported platforms: {}".format(
-            platform,
-            ", ".join(ver.keys()),
-        ))
-    info = ver[platform]
+    info = get_release(
+        node_releases,
+        version,
+        platform,
+        custom_releases = custom_releases,
+        tool_name = "Node.js",
+    )
     return NodeReleaseInfo(
         version = version,
         url = info["url"],
@@ -184,10 +177,7 @@ def download_node(
         arch: Override host architecture detection.
         os: Override host OS detection.
     """
-    if arch == None:
-        arch = host_arch()
-    if os == None:
-        os = host_os()
+    arch, os = host_platform(arch, os)
 
     archive_name = name + "-archive"
     release = _get_node_release(version, "{}-{}".format(arch, os), custom_releases = releases)
