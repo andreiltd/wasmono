@@ -54,32 +54,6 @@ load(
     "get_release_version",
 )
 
-WasmToolsReleaseInfo = provider(
-    # @unsorted-dict-items
-    fields = {
-        "version": provider_field(str),
-        "url": provider_field(str),
-        "sha256": provider_field(str),
-    },
-)
-
-def _get_wasm_tools_release(
-        version: str,
-        platform: str,
-        custom_releases: [None, dict] = None) -> WasmToolsReleaseInfo:
-    wasm_tools_platform = get_release(
-        wasm_tools_releases,
-        version,
-        platform,
-        custom_releases = custom_releases,
-        tool_name = "wasm-tools",
-    )
-    return WasmToolsReleaseInfo(
-        version = version,
-        url = wasm_tools_platform["url"],
-        sha256 = wasm_tools_platform["shasum"],
-    )
-
 WasmToolsDistributionInfo = provider(
     # @unsorted-dict-items
     fields = {
@@ -157,12 +131,18 @@ def download_wasm_tools(
     arch, os = host_platform(arch, os)
 
     archive_name = name + "-archive"
-    release = _get_wasm_tools_release(version, "{}-{}".format(arch, os), custom_releases = releases)
+    release = get_release(
+        wasm_tools_releases,
+        version,
+        "{}-{}".format(arch, os),
+        custom_releases = releases,
+        tool_name = "wasm-tools",
+    )
 
     native.http_archive(
         name = archive_name,
-        urls = [release.url],
-        sha256 = release.sha256,
+        urls = [release["url"]],
+        sha256 = release["shasum"],
     )
 
     adapter_info = get_release_version(

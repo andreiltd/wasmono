@@ -1,8 +1,8 @@
 """Shared host platform detection helpers for toolchain rules.
 
-Provides a single source of truth for detecting the host architecture and OS,
-with configurable OS name mappings since different tools use different naming
-conventions (e.g., "linux" vs "unknown-linux-musl" vs "unknown-linux-gnu").
+Provides a single source of truth for detecting the canonical host architecture
+and OS, plus an explicit helper for mapping canonical OS names to tool-specific
+release names (e.g., "linux" vs "unknown-linux-musl" vs "unknown-linux-gnu").
 """
 
 load("@prelude//utils:expect.bzl", "expect")
@@ -21,37 +21,31 @@ def host_arch() -> str:
     else:
         fail("Unsupported host architecture.")
 
-def host_os(os_map: [None, dict] = None) -> str:
-    """Detect the host OS, with optional name mapping.
-
-    Args:
-        os_map: Optional dict mapping canonical OS names ("linux", "macos", "windows")
-                to tool-specific names. If None, returns canonical names.
+def host_os() -> str:
+    """Detect the canonical host OS.
 
     Returns:
-        The OS string, mapped through os_map if provided.
+        "linux", "macos", or "windows"
     """
     os = host_info().os
     if os.is_linux:
-        key = "linux"
+        return "linux"
     elif os.is_macos:
-        key = "macos"
+        return "macos"
     elif os.is_windows:
-        key = "windows"
+        return "windows"
     else:
         fail("Unsupported host OS.")
 
-    if os_map:
-        expect(key in os_map, "No OS mapping for '{}'. Available: {}", key, ", ".join(os_map.keys()))
-        return os_map[key]
-    return key
-
 def host_platform(
         arch: [None, str] = None,
-        os: [None, str] = None,
-        os_map: [None, dict] = None) -> (str, str):
+        os: [None, str] = None) -> (str, str):
     if arch == None:
         arch = host_arch()
     if os == None:
-        os = host_os(os_map)
+        os = host_os()
     return arch, os
+
+def map_os(os: str, os_map: dict) -> str:
+    expect(os in os_map, "No OS mapping for '{}'. Available: {}", os, ", ".join(os_map.keys()))
+    return os_map[os]

@@ -39,34 +39,6 @@ load(
     "get_release",
 )
 
-NodeReleaseInfo = provider(
-    # @unsorted-dict-items
-    fields = {
-        "version": provider_field(str),
-        "url": provider_field(str),
-        "sha256": provider_field(str),
-        "prefix": provider_field(str),
-    },
-)
-
-def _get_node_release(
-        version: str,
-        platform: str,
-        custom_releases: [None, dict] = None) -> NodeReleaseInfo:
-    info = get_release(
-        node_releases,
-        version,
-        platform,
-        custom_releases = custom_releases,
-        tool_name = "Node.js",
-    )
-    return NodeReleaseInfo(
-        version = version,
-        url = info["url"],
-        sha256 = info["shasum"],
-        prefix = info["prefix"],
-    )
-
 # ---------------------------------------------------------------------------
 # Node.js distribution rule
 # ---------------------------------------------------------------------------
@@ -180,18 +152,24 @@ def download_node(
     arch, os = host_platform(arch, os)
 
     archive_name = name + "-archive"
-    release = _get_node_release(version, "{}-{}".format(arch, os), custom_releases = releases)
+    release = get_release(
+        node_releases,
+        version,
+        "{}-{}".format(arch, os),
+        custom_releases = releases,
+        tool_name = "Node.js",
+    )
 
     native.http_archive(
         name = archive_name,
-        urls = [release.url],
-        sha256 = release.sha256,
+        urls = [release["url"]],
+        sha256 = release["shasum"],
     )
 
     node_distribution(
         name = name,
         dist = ":" + archive_name,
-        prefix = release.prefix,
+        prefix = release["prefix"],
         version = version,
         arch = arch,
         os = os,

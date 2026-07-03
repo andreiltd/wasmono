@@ -41,32 +41,6 @@ load(
     "get_release",
 )
 
-WevalReleaseInfo = provider(
-    # @unsorted-dict-items
-    fields = {
-        "version": provider_field(str),
-        "url": provider_field(str),
-        "sha256": provider_field(str),
-    },
-)
-
-def _get_weval_release(
-        version: str,
-        platform: str,
-        custom_releases: [None, dict] = None) -> WevalReleaseInfo:
-    info = get_release(
-        weval_releases,
-        version,
-        platform,
-        custom_releases = custom_releases,
-        tool_name = "weval",
-    )
-    return WevalReleaseInfo(
-        version = version,
-        url = info["url"],
-        sha256 = info["shasum"],
-    )
-
 WevalDistributionInfo = provider(
     # @unsorted-dict-items
     fields = {
@@ -132,12 +106,18 @@ def download_weval(
     arch, os = host_platform(arch, os)
 
     archive_name = name + "-archive"
-    release = _get_weval_release(version, "{}-{}".format(arch, os), custom_releases = releases)
+    release = get_release(
+        weval_releases,
+        version,
+        "{}-{}".format(arch, os),
+        custom_releases = releases,
+        tool_name = "weval",
+    )
 
     native.http_archive(
         name = archive_name,
-        urls = [release.url],
-        sha256 = release.sha256,
+        urls = [release["url"]],
+        sha256 = release["shasum"],
     )
 
     prefix = "weval-v{}-{}-{}".format(version, arch, os)

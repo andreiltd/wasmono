@@ -13,7 +13,7 @@ def get_release_version(
         version: str,
         *,
         custom_releases: [None, dict] = None,
-        tool_name: str):
+        tool_name: str) -> dict:
     all_releases = _overlay_releases(releases, custom_releases)
 
     expect(
@@ -32,7 +32,7 @@ def get_release(
         platform: str,
         *,
         custom_releases: [None, dict] = None,
-        tool_name: str):
+        tool_name: str) -> dict:
     version_releases = get_release_version(
         releases,
         version,
