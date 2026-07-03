@@ -95,20 +95,10 @@ _WASI_SDK_ARCH_MAP = {
     "aarch64": "arm64",
 }
 
-WasiSdkReleaseInfo = provider(
-    # @unsorted-dict-items
-    fields = {
-        "version": provider_field(str),
-        "url": provider_field(str),
-        "sha256": provider_field(str),
-        "prefix": provider_field(str),
-    },
-)
-
 def _get_wasi_sdk_release(
         version: str,
         platform: str,
-        custom_releases: [None, dict] = None) -> WasiSdkReleaseInfo:
+        custom_releases: [None, dict] = None) -> dict:
     all_releases = releases
     if custom_releases != None:
         all_releases = dict(releases)
@@ -126,15 +116,14 @@ def _get_wasi_sdk_release(
             ", ".join(wasi_version.keys()),
         ))
     wasi_platform = wasi_version[platform]
-    return WasiSdkReleaseInfo(
-        version = version,
-        url = wasi_platform["url"],
-        sha256 = wasi_platform["shasum"],
-        prefix = wasi_platform.get(
+    return {
+        "url": wasi_platform["url"],
+        "sha256": wasi_platform["shasum"],
+        "prefix": wasi_platform.get(
             "prefix",
             "wasi-sdk-{}-{}/".format(version, platform),
         ),
-    )
+    }
 
 WasiSdkDistributionInfo = provider(
     # @unsorted-dict-items
@@ -203,8 +192,8 @@ def download_wasi_sdk(
 
     native.http_archive(
         name = archive_name,
-        urls = [release.url],
-        sha256 = release.sha256,
+        urls = [release["url"]],
+        sha256 = release["sha256"],
     )
 
     wasi_sdk_distribution(
@@ -213,7 +202,7 @@ def download_wasi_sdk(
         version = version,
         arch = arch,
         os = os,
-        prefix = release.prefix,
+        prefix = release["prefix"],
     )
 
 def _tool_path(dist_artifact, dist_info, tool_name):

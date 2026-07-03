@@ -17,6 +17,7 @@ load(
 load(
     ":host.bzl",
     "host_platform",
+    "map_os",
 )
 load(
     ":release_utils.bzl",
@@ -28,33 +29,6 @@ _WAC_OS_MAP = {
     "macos": "apple-darwin",
     "windows": "pc-windows-gnu",
 }
-
-WacReleaseInfo = provider(
-    # @unsorted-dict-items
-    fields = {
-        "version": provider_field(str),
-        "url": provider_field(str),
-        "sha256": provider_field(str),
-    },
-    doc = """WacReleaseInfo: Metadata for a specific prebuilt `wac` release asset.""",
-)
-
-def _get_wac_release(
-        version: str,
-        platform: str,
-        custom_releases: [None, dict] = None) -> WacReleaseInfo:
-    info = get_release(
-        wac_releases,
-        version,
-        platform,
-        custom_releases = custom_releases,
-        tool_name = "wac",
-    )
-    return WacReleaseInfo(
-        version = version,
-        url = info["url"],
-        sha256 = info["shasum"],
-    )
 
 WacDistributionInfo = provider(
     # @unsorted-dict-items
@@ -114,22 +88,29 @@ def download_wac(
         arch: Target architecture (defaults to host architecture).
         os: Target OS (defaults to host OS).
     """
-    arch, os = host_platform(arch, os, _WAC_OS_MAP)
+    arch, os = host_platform(arch, os)
+    release_os = map_os(os, _WAC_OS_MAP)
 
-    release = _get_wac_release(version, "{}-{}".format(arch, os), custom_releases = releases)
+    release = get_release(
+        wac_releases,
+        version,
+        "{}-{}".format(arch, release_os),
+        custom_releases = releases,
+        tool_name = "wac",
+    )
 
     # fetch the raw binary asset
     native.http_file(
         name = name + "_bin",
-        urls = [release.url],
-        sha256 = release.sha256,
+        urls = [release["url"]],
+        sha256 = release["shasum"],
         executable = True,
     )
 
     wac_distribution(
         name = name,
         dist = ":" + name + "_bin",
-        suffix = ".exe" if "windows" in os else "",
+        suffix = ".exe" if os == "windows" else "",
         version = version,
         arch = arch,
         os = os,
@@ -157,7 +138,7 @@ def _wac_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
             actions = ctx.actions,
             name = name,
             cmd = cmd_args(wac, subcommand),
-            language = ScriptLanguage("bat" if dist.os == "pc-windows-gnu" else "sh"),
+            language = ScriptLanguage("bat" if dist.os == "windows" else "sh"),
         )
 
     wac_plug = create_subcommand("wac_plug", "plug")

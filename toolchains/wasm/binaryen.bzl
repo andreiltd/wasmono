@@ -52,32 +52,6 @@ load(
     "get_release",
 )
 
-BinaryenReleaseInfo = provider(
-    # @unsorted-dict-items
-    fields = {
-        "version": provider_field(str),
-        "url": provider_field(str),
-        "sha256": provider_field(str),
-    },
-)
-
-def _get_binaryen_release(
-        version: str,
-        platform: str,
-        custom_releases: [None, dict] = None) -> BinaryenReleaseInfo:
-    plat = get_release(
-        binaryen_releases,
-        version,
-        platform,
-        custom_releases = custom_releases,
-        tool_name = "Binaryen",
-    )
-    return BinaryenReleaseInfo(
-        version = version,
-        url = plat["url"],
-        sha256 = plat["shasum"],
-    )
-
 BinaryenDistributionInfo = provider(
     # @unsorted-dict-items
     fields = {
@@ -152,22 +126,24 @@ def download_binaryen(
         arch: Target architecture (defaults to host architecture).
         os: Target OS (defaults to host OS).
     """
-    arch, os = host_platform(arch, os, os_map = {
-        "linux": "linux",
-        "macos": "macos",
-        "windows": "windows",
-    })
+    arch, os = host_platform(arch, os)
 
     # Binaryen uses "arm64" instead of "aarch64" on macOS
     release_arch = "arm64" if arch == "aarch64" and os == "macos" else arch
 
     archive_name = name + "-archive"
-    release = _get_binaryen_release(version, "{}-{}".format(release_arch, os), custom_releases = releases)
+    release = get_release(
+        binaryen_releases,
+        version,
+        "{}-{}".format(release_arch, os),
+        custom_releases = releases,
+        tool_name = "Binaryen",
+    )
 
     native.http_archive(
         name = archive_name,
-        urls = [release.url],
-        sha256 = release.sha256,
+        urls = [release["url"]],
+        sha256 = release["shasum"],
     )
 
     binaryen_distribution(

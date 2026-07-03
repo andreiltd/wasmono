@@ -17,6 +17,7 @@ load(
 load(
     ":host.bzl",
     "host_platform",
+    "map_os",
 )
 load(
     ":release_utils.bzl",
@@ -28,33 +29,6 @@ _WKG_OS_MAP = {
     "macos": "apple-darwin",
     "windows": "pc-windows-gnu",
 }
-
-WkgReleaseInfo = provider(
-    # @unsorted-dict-items
-    fields = {
-        "version": provider_field(str),
-        "url": provider_field(str),
-        "sha256": provider_field(str),
-    },
-    doc = """WkgReleaseInfo: Metadata for a specific prebuilt `wkg` release asset.""",
-)
-
-def _get_wkg_release(
-        version: str,
-        platform: str,
-        custom_releases: [None, dict] = None) -> WkgReleaseInfo:
-    info = get_release(
-        wkg_releases,
-        version,
-        platform,
-        custom_releases = custom_releases,
-        tool_name = "wkg",
-    )
-    return WkgReleaseInfo(
-        version = version,
-        url = info["url"],
-        sha256 = info["shasum"],
-    )
 
 WkgDistributionInfo = provider(
     # @unsorted-dict-items
@@ -114,22 +88,29 @@ def download_wkg(
         arch: Target architecture (defaults to host architecture).
         os: Target OS (defaults to host OS).
     """
-    arch, os = host_platform(arch, os, _WKG_OS_MAP)
+    arch, os = host_platform(arch, os)
+    release_os = map_os(os, _WKG_OS_MAP)
 
-    release = _get_wkg_release(version, "{}-{}".format(arch, os), custom_releases = releases)
+    release = get_release(
+        wkg_releases,
+        version,
+        "{}-{}".format(arch, release_os),
+        custom_releases = releases,
+        tool_name = "wkg",
+    )
 
     # fetch the raw binary asset
     native.http_file(
         name = name + "_bin",
-        urls = [release.url],
-        sha256 = release.sha256,
+        urls = [release["url"]],
+        sha256 = release["shasum"],
         executable = True,
     )
 
     wkg_distribution(
         name = name,
         dist = ":" + name + "_bin",
-        suffix = ".exe" if "windows" in os else "",
+        suffix = ".exe" if os == "windows" else "",
         version = version,
         arch = arch,
         os = os,
@@ -157,7 +138,7 @@ def _wkg_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
             actions = ctx.actions,
             name = name,
             cmd = cmd_args(wkg, subcommand),
-            language = ScriptLanguage("bat" if dist.os == "pc-windows-gnu" else "sh"),
+            language = ScriptLanguage("bat" if dist.os == "windows" else "sh"),
         )
 
     wkg_config = create_subcommand("wkg_config", "config")

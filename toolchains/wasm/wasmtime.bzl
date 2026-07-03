@@ -48,32 +48,6 @@ load(
     "get_release",
 )
 
-WasmtimeReleaseInfo = provider(
-    # @unsorted-dict-items
-    fields = {
-        "version": provider_field(str),
-        "url": provider_field(str),
-        "sha256": provider_field(str),
-    },
-)
-
-def _get_wasmtime_release(
-        version: str,
-        platform: str,
-        custom_releases: [None, dict] = None) -> WasmtimeReleaseInfo:
-    info = get_release(
-        wasmtime_releases,
-        version,
-        platform,
-        custom_releases = custom_releases,
-        tool_name = "wasmtime",
-    )
-    return WasmtimeReleaseInfo(
-        version = version,
-        url = info["url"],
-        sha256 = info["shasum"],
-    )
-
 WasmtimeDistributionInfo = provider(
     # @unsorted-dict-items
     fields = {
@@ -141,12 +115,18 @@ def download_wasmtime(
     arch, os = host_platform(arch, os)
 
     archive_name = name + "-archive"
-    release = _get_wasmtime_release(version, "{}-{}".format(arch, os), custom_releases = releases)
+    release = get_release(
+        wasmtime_releases,
+        version,
+        "{}-{}".format(arch, os),
+        custom_releases = releases,
+        tool_name = "wasmtime",
+    )
 
     native.http_archive(
         name = archive_name,
-        urls = [release.url],
-        sha256 = release.sha256,
+        urls = [release["url"]],
+        sha256 = release["shasum"],
     )
 
     if version == "dev":

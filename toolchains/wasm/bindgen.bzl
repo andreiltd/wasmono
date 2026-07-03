@@ -53,32 +53,6 @@ load(
     "get_release",
 )
 
-WitBindgenReleaseInfo = provider(
-    # @unsorted-dict-items
-    fields = {
-        "version": provider_field(str),
-        "url": provider_field(str),
-        "sha256": provider_field(str),
-    },
-)
-
-def _get_wit_bindgen_release(
-        version: str,
-        platform: str,
-        custom_releases: [None, dict] = None) -> WitBindgenReleaseInfo:
-    plat = get_release(
-        wit_bindgen_releases,
-        version,
-        platform,
-        custom_releases = custom_releases,
-        tool_name = "wit-bindgen",
-    )
-    return WitBindgenReleaseInfo(
-        version = version,
-        url = plat["url"],
-        sha256 = plat["shasum"],
-    )
-
 WitBindgenDistributionInfo = provider(
     # @unsorted-dict-items
     fields = {
@@ -145,12 +119,18 @@ def download_wit_bindgen(
     arch, os = host_platform(arch, os)
 
     archive_name = name + "-archive"
-    release = _get_wit_bindgen_release(version, "{}-{}".format(arch, os), custom_releases = releases)
+    release = get_release(
+        wit_bindgen_releases,
+        version,
+        "{}-{}".format(arch, os),
+        custom_releases = releases,
+        tool_name = "wit-bindgen",
+    )
 
     native.http_archive(
         name = archive_name,
-        urls = [release.url],
-        sha256 = release.sha256,
+        urls = [release["url"]],
+        sha256 = release["shasum"],
     )
 
     wit_bindgen_distribution(
