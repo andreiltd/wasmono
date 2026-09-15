@@ -8,6 +8,11 @@ The toolchain automatically downloads the appropriate wasi-sdk distribution
 for your platform and provides a complete cross-compilation environment
 for WebAssembly targets.
 
+The default linker is the `clang++` driver, which supplies WASI startup objects
+and runtime libraries. `clang` is also supported as a driver. Explicit
+`linker_tool = "wasm-ld"` uses direct-linker flags instead; callers of that mode
+must supply their own startup, runtime-library, and library-search arguments.
+
 ## Examples
 
 To automatically fetch a distribution suitable for the host-platform configure
@@ -19,7 +24,7 @@ load("//cxx/wasi:defs.bzl", "download_wasi_sdk", "cxx_wasi_toolchain")
 
 download_wasi_sdk(
     name = "wasi-sdk",
-    version = "33.0",
+    version = "34.0",
 )
 
 cxx_wasi_toolchain(
@@ -30,6 +35,7 @@ cxx_wasi_toolchain(
 ```
 """
 
+load("@prelude//:artifacts.bzl", "single_artifact")
 load(
     "@prelude//cxx:cxx_toolchain_types.bzl",
     "BinaryUtilitiesInfo",
@@ -176,7 +182,7 @@ def download_wasi_sdk(
 
     Args:
         name: The name for the distribution target.
-        version: The WASI SDK version to download (e.g. "27.0").
+        version: The WASI SDK version to download (e.g. "34.0").
         releases: Optional dict of custom releases to overlay on built-in
             releases. Format: ``{"version": {"platform": {"url": "...", "shasum": "..."}}}``.
         arch: Target architecture (defaults to host architecture).
@@ -218,9 +224,12 @@ def _create_tool_script(ctx, dist_artifact, dist_info, name, tool_name):
 
 def _cxx_wasi_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
     dist = ctx.attrs.distribution[WasiSdkDistributionInfo]
-    dist_artifact = ctx.attrs.distribution[DefaultInfo].default_outputs[0]
+    dist_artifact = single_artifact(ctx.attrs.distribution).default_output
 
     linker_tool = ctx.attrs.linker_tool if ctx.attrs.linker_tool else "clang++"
+    # Prelude's "gnu" mode forwards linker flags through a compiler driver;
+    # "wasm" emits raw flags for a direct wasm-ld invocation.
+    linker_type = LinkerType("wasm" if linker_tool == "wasm-ld" else "gnu")
     target_flags = ["-target", ctx.attrs.target] if ctx.attrs.target else ["-target", "wasm32-wasip2"]
     sysroot_flags = [cmd_args(dist_artifact, format = "--sysroot={}/{}".format("{}", dist.sysroot_path))]
     common_compiler_flags = target_flags + sysroot_flags
@@ -273,12 +282,11 @@ def _cxx_wasi_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
             static_library_extension = "a",
             static_pic_dep_runtime_ld_flags = ctx.attrs.static_pic_dep_runtime_ld_flags,
             independent_shlib_interface_linker_flags = ctx.attrs.shared_library_interface_flags,
-            type = LinkerType("wasm"),
+            type = linker_type,
             use_archiver_flags = True,
-            is_pdb_generated = is_pdb_generated(LinkerType("gnu"), ctx.attrs.linker_flags),
+            is_pdb_generated = is_pdb_generated(linker_type, ctx.attrs.linker_flags),
         ),
         binary_utilities_info = BinaryUtilitiesInfo(
-            bolt_msdk = None,
             dwp = None,
             nm = RunInfo(args = cmd_args(wasi_nm)),
             objcopy = RunInfo(args = cmd_args(wasi_objcopy)),
@@ -304,7 +312,7 @@ cxx_wasi_toolchain = rule(
         "linker_tool": attrs.option(
             attrs.enum(["wasm-ld", "clang++", "clang"]),
             default = None,
-            doc = "Which linker tool to use"
+            doc = "Clang driver (default clang++) or direct wasm-ld with caller-supplied startup/runtime flags",
         ),
         "link_style": attrs.enum(
             LinkStyle.values(),

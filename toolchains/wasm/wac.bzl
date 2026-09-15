@@ -1,11 +1,4 @@
-load(
-    "@prelude//os_lookup:defs.bzl",
-    "ScriptLanguage",
-)
-load(
-    "@prelude//utils:cmd_script.bzl",
-    "cmd_script",
-)
+load("@prelude//:artifacts.bzl", "single_artifact")
 load(
     "@prelude//:prelude.bzl",
     "native",
@@ -37,14 +30,14 @@ WacDistributionInfo = provider(
         "arch": provider_field(str),
         "os": provider_field(str),
     },
-    doc = """WacInfo: Toolchain provider exposing the `wac` binary and convenient RunInfo wrappers for common subcommands.""",
+    doc = """WacInfo: Toolchain provider exposing the `wac` binary and RunInfo commands for common subcommands.""",
 )
 
 def _wac_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
     # Create a copy of the wac binary
     dst = ctx.actions.declare_output("wac" + ctx.attrs.suffix)
 
-    ctx.actions.copy_file(dst.as_output(), ctx.attrs.dist[DefaultInfo].default_outputs[0])
+    ctx.actions.copy_file(dst.as_output(), single_artifact(ctx.attrs.dist).default_output)
 
     wac_args = cmd_args(
         [dst],
@@ -130,33 +123,18 @@ WacInfo = provider(
 )
 
 def _wac_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
-    dist = ctx.attrs.distribution[WacDistributionInfo]
     wac = ctx.attrs.distribution[RunInfo]
-
-    def create_subcommand(name, subcommand):
-        return cmd_script(
-            actions = ctx.actions,
-            name = name,
-            cmd = cmd_args(wac, subcommand),
-            language = ScriptLanguage("bat" if dist.os == "windows" else "sh"),
-        )
-
-    wac_plug = create_subcommand("wac_plug", "plug")
-    wac_compose = create_subcommand("wac_compose", "compose")
-    wac_parse = create_subcommand("wac_parse", "parse")
-    wac_resolve = create_subcommand("wac_resolve", "resolve")
-    wac_targets = create_subcommand("wac_targets", "targets")
 
     return [
         ctx.attrs.distribution[DefaultInfo],
         ctx.attrs.distribution[RunInfo],
         WacInfo(
             wac = wac,
-            plug = RunInfo(args = cmd_args(wac_plug)),
-            compose = RunInfo(args = cmd_args(wac_compose)),
-            parse = RunInfo(args = cmd_args(wac_parse)),
-            resolve = RunInfo(args = cmd_args(wac_resolve)),
-            targets = RunInfo(args = cmd_args(wac_targets)),
+            plug = RunInfo(args = cmd_args(wac, "plug")),
+            compose = RunInfo(args = cmd_args(wac, "compose")),
+            parse = RunInfo(args = cmd_args(wac, "parse")),
+            resolve = RunInfo(args = cmd_args(wac, "resolve")),
+            targets = RunInfo(args = cmd_args(wac, "targets")),
         ),
     ]
 

@@ -1,6 +1,38 @@
 # WASI-SDK release information
 # Update from https://github.com/WebAssembly/wasi-sdk/releases
 releases = {
+    "34.0": {
+        "arm64-linux": {
+            "shasum": "f7e243dff54d60bcc576e94d6166b69f410f2500ae4a9ceef34315be10e77971",
+            "url": "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-arm64-linux.tar.gz",
+            "prefix": "wasi-sdk-34.0-arm64-linux/",
+        },
+        "arm64-macos": {
+            "shasum": "9c59398106b417f8f14913380fdf0097a8cc0ff4af9eb3ce0065a859e88d49e9",
+            "url": "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-arm64-macos.tar.gz",
+            "prefix": "wasi-sdk-34.0-arm64-macos/",
+        },
+        "arm64-windows": {
+            "shasum": "45e1c71f3e965621e7b98ebe1d37b0e4b1f77f3e8072113ffb4534e67b1a4b7c",
+            "url": "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-arm64-windows.tar.gz",
+            "prefix": "wasi-sdk-34.0-arm64-windows/",
+        },
+        "x86_64-linux": {
+            "shasum": "b761e3a0721dbae9c09a0059e5fdb2bf917d1b4a8a7b430fb3b5aafb0984b2c4",
+            "url": "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-x86_64-linux.tar.gz",
+            "prefix": "wasi-sdk-34.0-x86_64-linux/",
+        },
+        "x86_64-macos": {
+            "shasum": "87d27fa8adc68dee59bfbf2e22a6d34ef717c34d6bf1d8af2a56fc929d9ce0eb",
+            "url": "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-x86_64-macos.tar.gz",
+            "prefix": "wasi-sdk-34.0-x86_64-macos/",
+        },
+        "x86_64-windows": {
+            "shasum": "cccb5c323a9b34f0349a9b09e8804a0a7632c68c3310f4b5f437ed57d7e71d8f",
+            "url": "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-x86_64-windows.tar.gz",
+            "prefix": "wasi-sdk-34.0-x86_64-windows/",
+        },
+    },
     "33.0": {
         "arm64-linux": {
             "shasum": "4f98ee738c7abb45c81a94d1461fc53cc569d1cd01498951c8184d841a027844",
@@ -11,7 +43,7 @@ releases = {
             "url": "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-33/wasi-sdk-33.0-arm64-macos.tar.gz",
         },
         "arm64-windows": {
-            "shasum": "be656fa99d89ac7fdcd2ee0e846ffa73171a0048b695de657409e0c37570cfce",
+            "shasum": "2f457a62da1ce1a55e2ba77c450401b3551f27f04f0a87112b74c5aa8dd9504f",
             "url": "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-33/wasi-sdk-33.0-arm64-windows.tar.gz",
         },
         "x86_64-linux": {

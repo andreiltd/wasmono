@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -11,6 +12,7 @@ import sys
 def _abs_path(arg: str, cwd: str) -> str:
     if os.path.isabs(arg):
         return arg
+
     return os.path.join(cwd, arg)
 
 
@@ -21,6 +23,7 @@ def _abs_command_arg(arg: str, cwd: str) -> str:
 
 def _copy_wit(src: str, out_dir: str) -> None:
     name = os.path.basename(os.path.normpath(src))
+
     if os.path.isdir(src):
         shutil.copytree(src, out_dir, dirs_exist_ok=True)
     else:
@@ -39,26 +42,52 @@ def main() -> int:
 
     if args.wkg_wit and args.wkg_wit[0] == "--":
         args.wkg_wit = args.wkg_wit[1:]
+
     if not args.wkg_wit:
         print("error: no wkg wit command specified", file=sys.stderr)
         return 1
+
     if not args.wit:
         print("error: no WIT inputs specified", file=sys.stderr)
         return 1
 
     cwd = os.getcwd()
     out_dir = _abs_path(args.out_dir, cwd)
+
     if os.path.exists(out_dir):
         shutil.rmtree(out_dir)
+
     os.makedirs(out_dir)
 
     for src in args.wit:
         _copy_wit(_abs_path(src, cwd), out_dir)
 
     cmd = [_abs_command_arg(part, cwd) for part in args.wkg_wit]
-    cmd.extend(["fetch", "--wit-dir", out_dir])
+    help_result = subprocess.run(
+        [*cmd, "fetch", "--help"],
+        stdout=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+
+    if help_result.returncode:
+        print("error: could not inspect wkg wit fetch options", file=sys.stderr)
+        return help_result.returncode
+
+    # wkg 0.16 replaced --wit-dir with a positional directory argument.
+    cmd.append("fetch")
+
+    if re.search(r"^\s+(?:-\w,\s+)?--wit-dir\s", help_result.stdout, re.MULTILINE):
+        cmd.extend(["--wit-dir", out_dir])
+    elif re.search(r"^Usage: .*\[DIR\](?:\s|$)", help_result.stdout, re.MULTILINE):
+        cmd.append(out_dir)
+    else:
+        print("error: unsupported wkg wit fetch directory interface", file=sys.stderr)
+        return 1
+
     if args.config:
         cmd.extend(["--config", _abs_path(args.config, cwd)])
+
     if args.cache:
         cmd.extend(["--cache", _abs_path(args.cache, cwd)])
 

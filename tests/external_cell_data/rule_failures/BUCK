@@ -1,0 +1,60 @@
+load("@wasmono//:defs.bzl", "wasm_component", "wasm_compose", "wasm_package", "wasm_plug", "wit_bindgen_c", "wit_bindgen_rust")
+load("@wasmono//toolchains/wasm:wac.bzl", "wac_distribution")
+load("@wasmono//toolchains/wasm:wkg.bzl", "wkg_distribution")
+
+wasm_component(name = "ambiguous_component", component = "//rule_regressions:ambiguous")
+wit_bindgen_rust(name = "empty_wit", wit = ["//rule_regressions:empty_metadata"], world = "api")
+wit_bindgen_rust(name = "empty_binding_wit", wit = ["//rule_regressions:empty_binding_metadata"], world = "api")
+
+wasm_plug(
+    name = "invalid_plug",
+    socket = "//rule_regressions:socket.component.wasm",
+    plugs = ["//rule_regressions:prebuilt.component.wasm", "//rule_regressions:not-wit.txt"],
+)
+wasm_plug(name = "empty_plugs", socket = "//rule_regressions:socket.component.wasm")
+wasm_plug(name = "inline_registry", socket_registry = "test:socket@1.2.3", plugs_registry = ["test:plug@1.2.3"])
+wasm_package(name = "unpinned_package", package = "test:package")
+wasm_package(name = "version_range", package = "test:package@^1.2.3")
+wasm_package(name = "invalid_digest", package = "test:package@1.2.3", expected_sha256 = "invalid")
+
+# These package declarations are only analyzed; no registry access is needed.
+wasm_package(name = "pinned_package", package = "test:package@1.2.3")
+wasm_package(name = "prerelease_package", package = "test:package@1.2.3-rc.1+fixture")
+wasm_package(name = "digest_pinned_package", package = "test:package", expected_sha256 = "0" * 64)
+wasm_package(name = "explicitly_unpinned_package", package = "test:package", allow_unpinned = True)
+
+# Distribution inputs need one default output, but do not need RunInfo.
+_DISTRIBUTION_ATTRS = {
+    "arch": "x86_64",
+    "os": "windows",
+    "suffix": ".exe",
+    "version": "fixture",
+}
+wac_distribution(
+    name = "empty_distribution",
+    dist = "//rule_regressions:empty_metadata",
+    **_DISTRIBUTION_ATTRS
+)
+wkg_distribution(
+    name = "ambiguous_distribution",
+    dist = "//rule_regressions:ambiguous",
+    **_DISTRIBUTION_ATTRS
+)
+wac_distribution(
+    name = "default_only_wac",
+    dist = "//rule_regressions:api.wit",
+    **_DISTRIBUTION_ATTRS
+)
+wkg_distribution(
+    name = "default_only_wkg",
+    dist = "//rule_regressions:api.wit",
+    **_DISTRIBUTION_ATTRS
+)
+
+wasm_compose(name = "undeclared_package", wac_file = "missing.wac")
+wit_bindgen_c(
+    name = "invalid_encoding",
+    wit = ["//rule_regressions:api.wit"],
+    world = "api",
+    string_encoding = read_config("regressions", "encoding", "utf8"),
+)

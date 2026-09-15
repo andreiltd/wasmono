@@ -1,0 +1,3 @@
+package test:other@2.0.0;
+
+world other {}

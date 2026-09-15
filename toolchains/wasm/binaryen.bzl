@@ -4,7 +4,8 @@ Binaryen provides wasm-opt and other tools for optimizing, transforming,
 and analyzing WebAssembly modules.
 
 This toolchain provides a hermetic installation of Binaryen and exposes
-wasm-opt and other common tools as convenient wrappers.
+wasm-opt and other common tools as direct executable commands. Executables
+remain in the archive's bin/lib layout so runtime libraries stay available.
 
 ## Examples
 
@@ -16,7 +17,7 @@ load("//wasm:binaryen.bzl", "download_binaryen", "binaryen_toolchain")
 
 download_binaryen(
     name = "binaryen_dist",
-    version = "130",
+    version = "132",
 )
 
 binaryen_toolchain(
@@ -27,14 +28,7 @@ binaryen_toolchain(
 ```
 """
 
-load(
-    "@prelude//os_lookup:defs.bzl",
-    "ScriptLanguage",
-)
-load(
-    "@prelude//utils:cmd_script.bzl",
-    "cmd_script",
-)
+load("@prelude//:artifacts.bzl", "single_artifact")
 load(
     "@prelude//:prelude.bzl",
     "native",
@@ -58,34 +52,18 @@ BinaryenDistributionInfo = provider(
         "version": provider_field(str),
         "arch": provider_field(str),
         "os": provider_field(str),
+        "bin_dir": provider_field(Artifact),
+        "suffix": provider_field(str),
     },
 )
 
 def _binaryen_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
-    dist_output = ctx.attrs.dist[DefaultInfo].default_outputs[0]
-
-    # On macOS, wasm-opt is dynamically linked against libbinaryen.dylib via
-    # @rpath/../lib/. Preserve the bin/lib directory structure so the rpath
-    # resolves correctly.
-    if ctx.attrs.os == "macos":
-        dst = ctx.actions.declare_output("bin/wasm-opt" + ctx.attrs.suffix)
-        dylib_src = dist_output.project(ctx.attrs.prefix + "/lib/libbinaryen.dylib")
-        dylib_dst = ctx.actions.declare_output("lib/libbinaryen.dylib")
-        ctx.actions.copy_file(dylib_dst.as_output(), dylib_src)
-        extra_hidden = [dylib_dst]
-    else:
-        dst = ctx.actions.declare_output("wasm-opt" + ctx.attrs.suffix)
-        extra_hidden = []
-
-    src = dist_output.project(ctx.attrs.prefix + "/bin/wasm-opt" + ctx.attrs.suffix)
-    ctx.actions.copy_file(dst.as_output(), src)
+    dist_info = ctx.attrs.dist[DefaultInfo]
+    bin_dir = single_artifact(ctx.attrs.dist).default_output.project(ctx.attrs.prefix + "/bin")
 
     wasm_opt = cmd_args(
-        [dst],
-        hidden = [
-            ctx.attrs.dist[DefaultInfo].default_outputs,
-            ctx.attrs.dist[DefaultInfo].other_outputs,
-        ] + extra_hidden,
+        bin_dir.project("wasm-opt" + ctx.attrs.suffix),
+        hidden = [dist_info.default_outputs, dist_info.other_outputs],
     )
 
     return [
@@ -95,6 +73,8 @@ def _binaryen_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
             version = ctx.attrs.version,
             arch = ctx.attrs.arch,
             os = ctx.attrs.os,
+            bin_dir = bin_dir,
+            suffix = ctx.attrs.suffix,
         ),
     ]
 
@@ -170,32 +150,24 @@ BinaryenInfo = provider(
 
 def _binaryen_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
     dist = ctx.attrs.distribution[BinaryenDistributionInfo]
+    dist_info = ctx.attrs.distribution[DefaultInfo]
     wasm_opt = ctx.attrs.distribution[RunInfo]
 
-    def create_subcommand(name, binary_name):
-        """Create a wrapper that runs a sibling binary next to wasm-opt."""
-        sibling = cmd_args(wasm_opt, format = "{{}}/../{}".format(binary_name))
-        return cmd_script(
-            actions = ctx.actions,
-            name = name,
-            cmd = sibling,
-            language = ScriptLanguage("bat" if dist.os == "windows" else "sh"),
-        )
-
-    wasm_dis = create_subcommand("wasm_dis", "wasm-dis")
-    wasm_as = create_subcommand("wasm_as", "wasm-as")
-    wasm2js = create_subcommand("wasm2js", "wasm2js")
-    wasm_metadce = create_subcommand("wasm_metadce", "wasm-metadce")
+    def binary(binary_name):
+        return RunInfo(args = cmd_args(
+            dist.bin_dir.project(binary_name + dist.suffix),
+            hidden = [dist_info.default_outputs, dist_info.other_outputs],
+        ))
 
     return [
         ctx.attrs.distribution[DefaultInfo],
         ctx.attrs.distribution[RunInfo],  # Direct access to wasm-opt binary
         BinaryenInfo(
             wasm_opt = wasm_opt,
-            wasm_dis = RunInfo(args = cmd_args(wasm_dis)),
-            wasm_as = RunInfo(args = cmd_args(wasm_as)),
-            wasm2js = RunInfo(args = cmd_args(wasm2js)),
-            wasm_metadce = RunInfo(args = cmd_args(wasm_metadce)),
+            wasm_dis = binary("wasm-dis"),
+            wasm_as = binary("wasm-as"),
+            wasm2js = binary("wasm2js"),
+            wasm_metadce = binary("wasm-metadce"),
         ),
     ]
 

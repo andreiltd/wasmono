@@ -3,6 +3,8 @@
 Provides a single source of truth for detecting the canonical host architecture
 and OS, plus an explicit helper for mapping canonical OS names to tool-specific
 release names (e.g., "linux" vs "unknown-linux-musl" vs "unknown-linux-gnu").
+Native npm installations use matching target and execution constraints so their
+runtime-native dependencies stay on the platform that will consume them.
 """
 
 load("@prelude//utils:expect.bzl", "expect")
@@ -49,3 +51,22 @@ def host_platform(
 def map_os(os: str, os_map: dict) -> str:
     expect(os in os_map, "No OS mapping for '{}'. Available: {}", os, ", ".join(os_map.keys()))
     return os_map[os]
+
+def platform_constraints(arch: str, os: str) -> list[str]:
+    cpus = {"aarch64": "arm64", "x86_64": "x86_64"}
+    expect(arch in cpus, "Unsupported execution architecture '{}'", arch)
+    expect(os in ["linux", "macos", "windows"], "Unsupported execution OS '{}'", os)
+    return ["prelude//cpu:" + cpus[arch], "prelude//os:" + os]
+
+def native_execution_compatible_with():
+    """Execute native installations on the same OS/CPU as their target."""
+    return select({
+        "prelude//cpu:arm64": ["prelude//cpu:arm64"],
+        "prelude//cpu:x86_64": ["prelude//cpu:x86_64"],
+        "DEFAULT": ["prelude//:none"],
+    }) + select({
+        "prelude//os:linux": ["prelude//os:linux"],
+        "prelude//os:macos": ["prelude//os:macos"],
+        "prelude//os:windows": ["prelude//os:windows"],
+        "DEFAULT": ["prelude//:none"],
+    })

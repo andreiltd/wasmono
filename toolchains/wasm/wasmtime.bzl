@@ -12,7 +12,7 @@ load("//wasm:wasmtime.bzl", "download_wasmtime", "wasmtime_toolchain")
 
 download_wasmtime(
     name = "wasmtime_dist",
-    version = "46.0.0",
+    version = "48.0.2",
 )
 
 wasmtime_toolchain(
@@ -23,14 +23,7 @@ wasmtime_toolchain(
 ```
 """
 
-load(
-    "@prelude//os_lookup:defs.bzl",
-    "ScriptLanguage",
-)
-load(
-    "@prelude//utils:cmd_script.bzl",
-    "cmd_script",
-)
+load("@prelude//:artifacts.bzl", "single_artifact")
 load(
     "@prelude//:prelude.bzl",
     "native",
@@ -59,7 +52,7 @@ WasmtimeDistributionInfo = provider(
 
 def _wasmtime_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
     dst = ctx.actions.declare_output("wasmtime" + ctx.attrs.suffix)
-    dist_output = ctx.attrs.dist[DefaultInfo].default_outputs[0]
+    dist_output = single_artifact(ctx.attrs.dist).default_output
     src = dist_output.project(ctx.attrs.prefix + "/wasmtime" + ctx.attrs.suffix)
 
     ctx.actions.copy_file(dst.as_output(), src)
@@ -155,27 +148,15 @@ WasmtimeInfo = provider(
 )
 
 def _wasmtime_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
-    dist = ctx.attrs.distribution[WasmtimeDistributionInfo]
     wasmtime = ctx.attrs.distribution[RunInfo]
-
-    def create_subcommand(name, subcommand):
-        return cmd_script(
-            actions = ctx.actions,
-            name = name,
-            cmd = cmd_args(wasmtime, subcommand),
-            language = ScriptLanguage("bat" if dist.os == "windows" else "sh"),
-        )
-
-    wasmtime_run = create_subcommand("wasmtime_run", "run")
-    wasmtime_wizer = create_subcommand("wasmtime_wizer", "wizer")
 
     return [
         ctx.attrs.distribution[DefaultInfo],
         ctx.attrs.distribution[RunInfo],
         WasmtimeInfo(
             wasmtime = wasmtime,
-            run = RunInfo(args = cmd_args(wasmtime_run)),
-            wizer = RunInfo(args = cmd_args(wasmtime_wizer)),
+            run = RunInfo(args = cmd_args(wasmtime, "run")),
+            wizer = RunInfo(args = cmd_args(wasmtime, "wizer")),
         ),
     ]
 

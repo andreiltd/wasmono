@@ -2,7 +2,10 @@
 
 Provides a pinned npm installation of the AssemblyScript compiler (`asc`) and
 a rule to compile `.ts` files to `.wasm` modules. The npm install action uses
-downloaded Node.js but still needs network access during the Buck action.
+downloaded Node.js on the selected execution platform, which needs npm registry
+access. Installation and execution OS/CPU constraints match the Node
+distribution; native npm dependencies are not installed on the Buck client for
+use on a different platform.
 
 ## Examples
 
@@ -12,7 +15,7 @@ downloaded Node.js but still needs network access during the Buck action.
 load("//wasm:node.bzl", "download_node", "node_toolchain")
 load("//wasm:assemblyscript.bzl", "install_asc", "asc_toolchain")
 
-download_node(name = "node_dist", version = "26.3.1")
+download_node(name = "node_dist", version = "26.8.2")
 node_toolchain(name = "node", distribution = ":node_dist", visibility = ["PUBLIC"])
 install_asc(name = "asc_dist", node = ":node_dist")
 asc_toolchain(name = "asc", distribution = ":asc_dist", visibility = ["PUBLIC"])
@@ -35,9 +38,9 @@ load(
     ":node.bzl",
     "NodeInfo",
 )
+load(":host.bzl", "native_execution_compatible_with")
 load("@prelude//decls:common.bzl", buck = "buck")
 load("@prelude//os_lookup:defs.bzl", "Os", "OsLookup")
-load("@prelude//python_bootstrap:python_bootstrap.bzl", "PythonBootstrapToolchainInfo")
 
 AscInfo = provider(
     # @unsorted-dict-items
@@ -67,7 +70,6 @@ def _install_asc_impl(ctx: AnalysisContext) -> list[Provider]:
     ctx.actions.run(
         cmd,
         category = "npm_install_asc",
-        local_only = True,  # needs network access
     )
 
     return [
@@ -78,12 +80,12 @@ def _install_asc_impl(ctx: AnalysisContext) -> list[Provider]:
 _install_asc = rule(
     impl = _install_asc_impl,
     attrs = {
-        "node": attrs.exec_dep(
+        "node": attrs.dep(
             providers = [NodeInfo],
-            doc = "Downloaded Node.js distribution providing node/npm",
+            doc = "Downloaded Node.js matching the installation platform",
         ),
         "version": attrs.string(
-            default = "0.27.31",
+            default = "0.28.20",
             doc = "AssemblyScript version to install from npm",
         ),
         "wasi_shim_version": attrs.string(
@@ -96,14 +98,17 @@ _install_asc = rule(
 
 def install_asc(
         name: str,
-        version: str = "0.27.31",
+        version: str = "0.28.20",
         wasi_shim_version: str = "0.1.0",
         node: str = "toolchains//:node_dist"):
-    """Install AssemblyScript compiler via npm.
+    """Install AssemblyScript via npm on its consuming execution platform.
+
+    Registry access is required there. Node's distribution constraints determine
+    compatible platforms; native dependencies are installed for that OS/CPU.
 
     Args:
         name: Target name.
-        version: AssemblyScript version (default "0.27.31").
+        version: AssemblyScript version (default "0.28.20").
         wasi_shim_version: WASI shim version (default "0.1.0").
         node: Label of the node distribution.
     """
@@ -112,6 +117,7 @@ def install_asc(
         version = version,
         wasi_shim_version = wasi_shim_version,
         node = node,
+        exec_compatible_with = native_execution_compatible_with(),
     )
 
 # ---------------------------------------------------------------------------
@@ -142,7 +148,6 @@ asc_toolchain = rule(
 def _assemblyscript_binary_impl(ctx: AnalysisContext) -> list[Provider]:
     node_info = ctx.attrs._node_toolchain[NodeInfo]
     asc_info = ctx.attrs._asc_toolchain[AscInfo]
-    python = ctx.attrs._python_bootstrap_toolchain[PythonBootstrapToolchainInfo].interpreter
     is_windows = ctx.attrs._exec_os_type[OsLookup].os == Os("windows")
 
     out = ctx.actions.declare_output(ctx.attrs.name + ".wasm")
@@ -159,7 +164,7 @@ def _assemblyscript_binary_impl(ctx: AnalysisContext) -> list[Provider]:
     # Use a Python build script to handle path separators correctly
     # on all platforms (shell scripts mangle backslashes on Windows).
     cmd = cmd_args(
-        python, ctx.attrs._build_script,
+        ctx.attrs._build_script[RunInfo],
         "--node", node_info.node,
         "--asc", asc_js,
         "--src", ctx.attrs.src,
@@ -170,8 +175,7 @@ def _assemblyscript_binary_impl(ctx: AnalysisContext) -> list[Provider]:
         cmd.add("--wasi")
     if is_windows:
         cmd.add("--copy-modules")
-    for flag in ctx.attrs.asc_flags:
-        cmd.add(flag)
+    cmd.add("--", ctx.attrs.asc_flags)
 
     ctx.actions.run(cmd, category = "asc_compile")
 
@@ -198,13 +202,10 @@ assemblyscript_binary = rule(
             default = "toolchains//:asc",
             providers = [AscInfo],
         ),
-        "_build_script": attrs.source(
-            default = "//tools:asc_build",
+        "_build_script": attrs.exec_dep(
+            default = "wasmono//tools:asc_build",
+            providers = [RunInfo],
         ),
-        "_python_bootstrap_toolchain": attrs.default_only(attrs.toolchain_dep(
-            default = "toolchains//:python_bootstrap",
-            providers = [PythonBootstrapToolchainInfo],
-        )),
         "_exec_os_type": buck.exec_os_type_arg(),
     },
     doc = "Compile an AssemblyScript source file to a WebAssembly module",

@@ -1,0 +1,25 @@
+load(":defs.bzl", "execution_platforms", "npm_platform_fixture", "remote_platform")
+
+remote_platform(
+    name = "linux_arm64",
+    cpu = "prelude//cpu:arm64",
+    os = "prelude//os:linux",
+)
+
+remote_platform(
+    name = "windows_x86_64",
+    cpu = "prelude//cpu:x86_64",
+    os = "prelude//os:windows",
+)
+
+execution_platforms(
+    name = "platforms",
+    platforms = [
+        "prelude//platforms:default",
+        ":linux_arm64",
+        ":windows_x86_64",
+    ],
+)
+
+npm_platform_fixture("linux_arm64", "aarch64", "linux")
+npm_platform_fixture("windows_x86_64", "x86_64", "windows")

@@ -1,3 +1,11 @@
+load(":defs.bzl", "constraint_from_configuration")
+
+constraint_from_configuration(
+    name = "wasm32",
+    configuration = "config//cpu:wasm32",
+    visibility = ["PUBLIC"],
+)
+
 constraint_setting(
     name = "wasi_version",
     visibility = ["PUBLIC"],

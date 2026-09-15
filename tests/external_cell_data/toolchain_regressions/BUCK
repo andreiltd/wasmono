@@ -1,0 +1,60 @@
+load("@wasmono//:defs.bzl", "assemblyscript_binary", "cxx_wasi_toolchain")
+load(":checks.bzl", "binaryen_test", "link_whole_fixture", "npm_bin_test")
+
+assemblyscript_binary(
+    name = "asc_flags",
+    src = "optimized.ts",
+    asc_flags = ["--optimize", "--noAssert"],
+    wasi = False,
+)
+
+binaryen_test(name = "binaryen_wasm_opt", utility = "wasm_opt")
+binaryen_test(name = "binaryen_wasm_dis", utility = "wasm_dis")
+binaryen_test(name = "binaryen_wasm_as", utility = "wasm_as")
+binaryen_test(name = "binaryen_wasm2js", utility = "wasm2js")
+binaryen_test(name = "binaryen_wasm_metadce", utility = "wasm_metadce")
+
+npm_bin_test(
+    name = "npm_bin",
+    src = "test_npm_bin.mjs",
+)
+
+cxx_wasi_toolchain(
+    name = "cxx_clangxx",
+    distribution = "toolchains//:shared_wasi_sdk",
+    target = "wasm32-wasip1",
+)
+
+cxx_wasi_toolchain(
+    name = "cxx_clang",
+    distribution = "toolchains//:shared_wasi_sdk",
+    linker_tool = "clang",
+    target = "wasm32-wasip1",
+)
+
+cxx_wasi_toolchain(
+    name = "cxx_wasm_ld",
+    distribution = "toolchains//:shared_wasi_sdk",
+    linker_tool = "wasm-ld",
+    linker_flags = ["--entry=_start", "--export=_start"],
+    target = "wasm32-wasip1",
+)
+
+link_whole_fixture("clangxx", "main.cpp")
+link_whole_fixture("clang", "main.c")
+link_whole_fixture("wasm_ld", "start.c")
+
+test_suite(
+    name = "tests",
+    tests = [
+        ":binaryen_wasm_opt",
+        ":binaryen_wasm_dis",
+        ":binaryen_wasm_as",
+        ":binaryen_wasm2js",
+        ":binaryen_wasm_metadce",
+        ":npm_bin",
+        ":link_whole_clangxx_check",
+        ":link_whole_clang_check",
+        ":link_whole_wasm_ld_check",
+    ],
+)

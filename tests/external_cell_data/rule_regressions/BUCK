@@ -1,0 +1,115 @@
+load(
+    "@wasmono//:defs.bzl",
+    "wasm_component",
+    "wasm_compose",
+    "wasm_plug",
+    "wasm_print",
+    "wit_bindgen_c",
+    "wit_bindgen_cxx",
+    "wit_bindgen_rust",
+    "wit_library",
+    "wit_to_markdown",
+)
+load(":defs.bzl", "assert_wit", "bundle", "component_file", "metadata")
+
+export_file(name = "not-wit.txt", visibility = ["PUBLIC"])
+export_file(name = "api.wit", visibility = ["PUBLIC"])
+export_file(name = "plug.wat")
+
+component_file(name = "prebuilt.component.wasm", src = "plug.wat", visibility = ["PUBLIC"])
+component_file(name = "prebuilt.wasm", src = "plug.wat")
+component_file(name = "opaque.bin", src = "plug.wat")
+component_file(name = "socket.component.wasm", src = "socket.wat", visibility = ["PUBLIC"])
+
+wasm_component(
+    name = "declared_component",
+    component = ":prebuilt.component.wasm",
+    visibility = ["PUBLIC"],
+)
+wasm_component(name = "declared_plain", component = ":prebuilt.wasm")
+
+metadata(name = "wit_metadata", payload = "not-wit.txt", wit = ["api.wit"])
+metadata(name = "provider_only", wit = ["api.wit"])
+metadata(name = "wasm_metadata", kinds = ["wasm"], payload = "not-wit.txt", wit = ["api.wit"])
+metadata(name = "binding_metadata", kinds = ["bindings"], payload = "not-wit.txt", wit = ["api.wit"])
+metadata(
+    name = "all_metadata",
+    kinds = ["wasm", "bindings"],
+    payload = "not-wit.txt",
+    wit = ["api.wit", "api.wit"],
+)
+metadata(
+    name = "typed_opaque",
+    kinds = ["wasm"],
+    payload = ":opaque.bin",
+    component = ":opaque.bin",
+    wit = ["api.wit"],
+)
+
+wit_library(name = "fetched_wit", wit = ["api.wit"])
+wit_bindgen_rust(name = "fetched_wit_bindings", wit = [":fetched_wit"], world = "api")
+
+wasm_component(name = "retained_metadata", component = ":typed_opaque")
+assert_wit(name = "check_retained_metadata", actual = ":retained_metadata", expected = ["api.wit"])
+wasm_component(name = "overridden_metadata", component = ":typed_opaque", wit = "other.wit")
+assert_wit(name = "check_overridden_metadata", actual = ":overridden_metadata", expected = ["other.wit"])
+wasm_print(name = "print_typed_opaque", input = ":typed_opaque")
+wasm_print(name = "print_wat", input = ":plug.wat")
+
+wit_bindgen_rust(
+    name = "metadata_bindings",
+    wit = [":all_metadata", ":wit_metadata", "api.wit"],
+    world = "test:api/api@1.2.3",
+)
+assert_wit(name = "check_deduplicated_metadata", actual = ":metadata_bindings", expected = ["api.wit"])
+
+wit_bindgen_c(name = "versioned_c", wit = [":provider_only"], world = "test:api/api@1.2.3")
+wit_bindgen_cxx(name = "versioned_cxx", wit = [":wasm_metadata"], world = "test:api/api@1.2.3")
+wit_to_markdown(name = "metadata_docs", wit = [":binding_metadata"], world = "api")
+wit_to_markdown(name = "generated_metadata_docs", wit = [":metadata_bindings"], world = "api")
+
+wit_bindgen_c(
+    name = "encoding_utf8",
+    wit = ["api.wit"],
+    world = "api",
+    string_encoding = "utf8",
+)
+wit_bindgen_c(
+    name = "encoding_utf16",
+    wit = ["api.wit"],
+    world = "api",
+    string_encoding = "utf16",
+)
+wasm_plug(
+    name = "plugged",
+    socket = ":socket.component.wasm",
+    plugs = [":prebuilt.component.wasm"],
+)
+wasm_compose(
+    name = "composed",
+    wac_file = "composition.wac",
+    deps = {"test:plug": ":prebuilt.component.wasm"},
+)
+wasm_compose(
+    name = "composed_versioned",
+    wac_file = "composition-versioned.wac",
+    deps = {"test:plug@1.2.3": ":prebuilt.component.wasm"},
+)
+wasm_compose(
+    name = "composed_mixed",
+    wac_file = "composition-mixed.wac",
+    deps = {"test:plug": ":prebuilt.component.wasm"},
+)
+
+bundle(
+    name = "ambiguous",
+    files = [":prebuilt.component.wasm", ":socket.component.wasm"],
+    visibility = ["PUBLIC"],
+)
+metadata(name = "empty_metadata", visibility = ["PUBLIC"])
+metadata(
+    name = "empty_binding_metadata",
+    kinds = ["bindings"],
+    payload = "not-wit.txt",
+    visibility = ["PUBLIC"],
+)

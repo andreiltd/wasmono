@@ -111,6 +111,14 @@ only for adapting WASI Preview 1 core modules before componentization.
 - `wit_bindgen_cxx` - Generate C++ bindings
 - `wit_to_markdown` - Generate documentation
 
+WIT inputs can be files, directories, or dependencies. Dependencies' `WasmInfo.wit`
+and `WitBindingInfo.wit` metadata takes precedence over their default outputs, so
+generated source files are not mistaken for WIT. Repeated inputs are deduplicated.
+Version-qualified worlds such as `test:api/api@1.2.3` are supported. The C generator
+supports `string_encoding = "utf8"` or `"utf16"`; `latin1` and `compact-utf16` are
+not supported by the pinned generator. `wit_to_markdown` produces a directory
+containing the generated documentation.
+
 ### JavaScript
 
 - `wasm_componentize_js` - Build component from JavaScript (via jco)
@@ -120,6 +128,20 @@ only for adapting WASI Preview 1 core modules before componentization.
 
 - `wasm_package` - Download packages from registries
 - `wit_library` - Define a WIT library with automatic dependency resolution (via wkg)
+
+`wasm_package` requires an exact `@version` or `expected_sha256` digest by default.
+Version ranges do not pin a package. `allow_unpinned = True` explicitly opts out
+of this reproducibility check.
+
+`wasm_package` and `wasm_compose` require `toolchains//:python_bootstrap`, included
+in the external-cell setup below.
+
+Composition requires explicit dependencies. Replace `wasm_plug`'s old
+`socket_registry` and `plugs_registry` arguments with pinned `wasm_package`
+targets passed through `socket` and `plugs`. Every external package referenced
+by a `wasm_compose` WAC file must appear in `deps`; composition will not look up
+undeclared registry packages or workspace dependencies. Version-qualified keys
+such as `"test:plug@1.2.3"` take precedence over unversioned keys.
 
 ## Example: Multi-Component App
 
@@ -173,12 +195,15 @@ wasm_plug(
 
 ## Toolchains
 
-Most toolchains are **downloaded and checksum-pinned** rather than relying on system installations. The jco and AssemblyScript setup paths pin npm package versions but run `npm install` as local-only Buck actions, so they need network access unless you use an explicit system/preinstalled setup.
+Most toolchains are **downloaded and checksum-pinned** rather than relying on system installations. The jco and AssemblyScript setup paths pin npm package versions and install them on the selected execution platform, which must have registry access. Their npm workspaces and native Node distribution must match that platform's OS and architecture. For jco, supply `package_json` and `package_lock` together to use `npm ci` instead of the default `npm install`. Explicit system/preinstalled setups are also supported.
 
 Downloaded binary toolchains are composed of two parts:
 
 1. **Distribution**: Downloads and extracts the tool binary
-2. **Toolchain**: Provides convenient wrappers and subcommands
+2. **Toolchain**: Provides commands and subcommands through `RunInfo`
+
+Native subcommands compose directly with `cmd_args`; shell launchers are only
+needed where platform dispatch requires them, such as Windows `.cmd` tools.
 
 This separation makes it easy to control tool sources and versions:
 
@@ -186,7 +211,7 @@ This separation makes it easy to control tool sources and versions:
 # Download the distribution
 download_wasm_tools(
     name = "wasm_tools_dist",
-    version = "1.239.0",
+    version = "1.259.0",
 )
 
 # Create toolchain from distribution
@@ -292,7 +317,7 @@ system_rust_toolchain(
 # WASM toolchains
 wasm_demo_toolchains()
 
-download_wasi_sdk(name = "wasi_sdk", version = "33.0")
+download_wasi_sdk(name = "wasi_sdk", version = "34.0")
 cxx_wasi_toolchain(name = "cxx_wasi", distribution = ":wasi_sdk", visibility = ["PUBLIC"])
 cxx_wasi_toolchain(
     name = "cxx_wasi_p1",
@@ -308,13 +333,16 @@ cxx_wasi_toolchain(
 platform(
     name = "wasm32_wasi",
     constraint_values = [
-        "config//cpu/constraints:wasm32",
+        "wasmono//wasm/constraints:wasm32",
         "config//os/constraints:wasi",
     ],
 )
 ```
 
 ### 4. Use the rules
+
+The Wasmono `wasm32` constraint preserves the consuming Prelude's CPU identity,
+including newer releases that expose it as `cpu[wasm32]` rather than a standalone target.
 
 ```python
 load("@wasmono//:defs.bzl", "wasm_component", "wasm_compose")
@@ -368,7 +396,7 @@ load(":my_releases.bzl", "my_releases")
 load("@wasmono//toolchains/wasm:demo.bzl", "wasm_demo_toolchains")
 
 wasm_demo_toolchains(
-    wasm_tools_version = "1.252.0",
+    wasm_tools_version = "1.259.0",
     releases = my_releases,
 )
 ```
