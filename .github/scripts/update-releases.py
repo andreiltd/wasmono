@@ -2,6 +2,9 @@
 # pylint: disable=invalid-name
 """Download release artifacts and update releases.bzl with new checksums.
 
+Release dictionaries must be single top-level literal assignments. New entries
+are inserted without rewriting existing metadata or comments.
+
 Usage:
     python3 .github/scripts/update-releases.py <tool> <version>
 
@@ -13,8 +16,8 @@ Examples:
     python3 .github/scripts/update-releases.py node 22.0.0
 """
 
+import ast
 import hashlib
-import re
 import sys
 import urllib.request
 from pathlib import Path
@@ -30,6 +33,7 @@ TOOLS = {
         "platforms": {
             "aarch64-linux": "aarch64-linux",
             "aarch64-macos": "aarch64-macos",
+            "aarch64-windows": "aarch64-windows",
             "x86_64-linux": "x86_64-linux",
             "x86_64-macos": "x86_64-macos",
             "x86_64-windows": "x86_64-windows",
@@ -110,6 +114,7 @@ TOOLS = {
         "platforms": {
             "aarch64-linux": "aarch64-linux",
             "aarch64-macos": "aarch64-macos",
+            "aarch64-windows": "aarch64-windows",
             "x86_64-linux": "x86_64-linux",
             "x86_64-macos": "x86_64-macos",
             "x86_64-windows": "x86_64-windows",
@@ -117,6 +122,22 @@ TOOLS = {
         "url": (
             "https://github.com/bytecodealliance/wasmtime/releases/"
             "download/v{version}/wasmtime-v{version}-{platform}.{ext}"
+        ),
+        "ext": lambda p: "zip" if "windows" in p else "tar.xz",
+    },
+    "weval": {
+        "file": "toolchains/wasm/releases.bzl",
+        "dict_name": "weval_releases",
+        "platforms": {
+            "aarch64-linux": "aarch64-linux",
+            "aarch64-macos": "aarch64-macos",
+            "x86_64-linux": "x86_64-linux",
+            "x86_64-macos": "x86_64-macos",
+            "x86_64-windows": "x86_64-windows",
+        },
+        "url": (
+            "https://github.com/bytecodealliance/weval/releases/"
+            "download/v{version}/weval-v{version}-{platform}.{ext}"
         ),
         "ext": lambda p: "zip" if "windows" in p else "tar.xz",
     },
@@ -137,28 +158,20 @@ TOOLS = {
         "file": "toolchains/node/releases.bzl",
         "extra_files": ["toolchains/wasm/node_releases.bzl"],
         "dict_name": "node_releases",
+        "prefix": "node-v{version}-{platform}",
         "platforms": {
-            "aarch64-linux": {
-                "node_platform": "linux-arm64",
-                "prefix": "node-v{version}-linux-arm64",
-            },
-            "aarch64-macos": {
-                "node_platform": "darwin-arm64",
-                "prefix": "node-v{version}-darwin-arm64",
-            },
-            "x86_64-linux": {
-                "node_platform": "linux-x64",
-                "prefix": "node-v{version}-linux-x64",
-            },
-            "x86_64-macos": {
-                "node_platform": "darwin-x64",
-                "prefix": "node-v{version}-darwin-x64",
-            },
+            "aarch64-linux": "linux-arm64",
+            "aarch64-macos": "darwin-arm64",
+            "aarch64-windows": "win-arm64",
+            "x86_64-linux": "linux-x64",
+            "x86_64-macos": "darwin-x64",
+            "x86_64-windows": "win-x64",
         },
         "url": (
             "https://nodejs.org/dist/v{version}/"
-            "node-v{version}-{node_platform}.tar.xz"
+            "node-v{version}-{platform}.{ext}"
         ),
+        "ext": lambda p: "zip" if p.startswith("win-") else "tar.xz",
     },
     "wasi-sdk": {
         "file": "toolchains/cxx/wasi/releases.bzl",
@@ -191,57 +204,43 @@ def sha256_url(url: str) -> str:
         headers={"User-Agent": "update-releases/1.0"},
     )
     h = hashlib.sha256()
+
     with urllib.request.urlopen(req) as resp:
         while True:
             chunk = resp.read(65536)
+
             if not chunk:
                 break
+
             h.update(chunk)
+
     digest = h.hexdigest()
     print(f"sha256={digest[:16]}...")
     return digest
 
 
 def build_entry_standard(tool_cfg: dict, version: str) -> dict:
-    """Build a {platform: {shasum, url}} entry for standard tools."""
+    """Build platform entries with per-platform archives and optional prefixes."""
     entry = {}
     url_key = tool_cfg.get("url_key", "url")
+    ext_fn = tool_cfg.get("ext", lambda p: "")
+    artifact_version = tool_cfg.get("artifact_version", lambda v: v)(version)
 
     for plat_key, plat_val in tool_cfg["platforms"].items():
-        if isinstance(plat_val, dict):
-            # Node.js style with extra fields
-            node_platform = plat_val["node_platform"]
-            prefix = plat_val["prefix"].format(version=version)
-            url = tool_cfg["url"].format(
-                version=version,
-                node_platform=node_platform,
-            )
-            sha = sha256_url(url)
-            entry[plat_key] = {
-                "shasum": sha,
-                url_key: url,
-                "prefix": prefix,
-            }
-        else:
-            # Standard: platform string used directly
-            ext_fn = tool_cfg.get("ext", lambda p: "")
-            ext = ext_fn(plat_val)
-            artifact_version = tool_cfg.get(
-                "artifact_version",
-                lambda v: v,
-            )(version)
-            fmt_kwargs = {
-                "version": artifact_version,
-                "platform": plat_val,
-                "ext": ext,
-                "major": version.split(".")[0] if "." in version else version,
-            }
-            url = tool_cfg["url"].format(**fmt_kwargs)
-            sha = sha256_url(url)
-            platform_entry = {"shasum": sha, url_key: url}
-            if "prefix" in tool_cfg:
-                platform_entry["prefix"] = tool_cfg["prefix"].format(**fmt_kwargs)
-            entry[plat_key] = platform_entry
+        fmt_kwargs = {
+            "version": artifact_version,
+            "platform": plat_val,
+            "ext": ext_fn(plat_val),
+            "major": version.split(".")[0],
+        }
+        url = tool_cfg["url"].format(**fmt_kwargs)
+        sha = sha256_url(url)
+        platform_entry = {"shasum": sha, url_key: url}
+
+        if "prefix" in tool_cfg:
+            platform_entry["prefix"] = tool_cfg["prefix"].format(**fmt_kwargs)
+
+        entry[plat_key] = platform_entry
 
     return entry
 
@@ -249,10 +248,12 @@ def build_entry_standard(tool_cfg: dict, version: str) -> dict:
 def build_entry_wasi_adapters(tool_cfg: dict, version: str) -> dict:
     """Build a {type: {url, shasum}} entry for wasi_adapters."""
     entry = {}
+
     for type_key, artifact in tool_cfg["types"].items():
         url = tool_cfg["url"].format(version=version, artifact=artifact)
         sha = sha256_url(url)
         entry[type_key] = {"url": url, "shasum": sha}
+
     return entry
 
 
@@ -261,13 +262,61 @@ def format_entry(entry: dict, indent: int = 8) -> str:
     pad = " " * indent
     inner_pad = " " * (indent + 4)
     lines = []
+
     for key, val in entry.items():
         if isinstance(val, dict):
             lines.append(f'{pad}"{key}": {{')
+
             for k, v in val.items():
                 lines.append(f'{inner_pad}"{k}": "{v}",')
+
             lines.append(f"{pad}}},")
+
     return "\n".join(lines)
+
+
+def _parse_release_dict(
+        content: str,
+        dict_name: str,
+        file_path: Path) -> tuple[ast.Dict, dict]:
+    """Locate and validate a literal release dictionary without executing it."""
+    try:
+        tree = ast.parse(content, filename=str(file_path))
+    except SyntaxError as exc:
+        raise ValueError(
+            f"Malformed release file {file_path} while locating '{dict_name}': "
+            f"{exc.msg} (line {exc.lineno})"
+        ) from exc
+
+    assignments = [
+        node for node in tree.body
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == dict_name
+            for target in node.targets
+        )
+    ]
+
+    if not assignments:
+        raise ValueError(f"Missing '{dict_name}' dictionary in {file_path}")
+
+    if len(assignments) != 1 or len(assignments[0].targets) != 1:
+        raise ValueError(
+            f"Expected a single assignment to '{dict_name}' in {file_path}"
+        )
+
+    node = assignments[0].value
+    error = f"'{dict_name}' in {file_path} must be a literal dictionary"
+
+    if not isinstance(node, ast.Dict):
+        raise ValueError(error)  # noqa: TRY004 - malformed release-file content
+
+    try:
+        versions = ast.literal_eval(node)
+    except (ValueError, TypeError) as exc:
+        raise ValueError(error) from exc
+
+    return node, versions
 
 
 def insert_version_entry(
@@ -275,28 +324,39 @@ def insert_version_entry(
         dict_name: str,
         version_key: str,
         entry: dict) -> None:
-    """Insert a new version entry into a .bzl dict."""
-    content = file_path.read_text(encoding="utf-8")
-    existing_entry = rf'^\s*"{re.escape(version_key)}":\s*\{{'
-    if re.search(existing_entry, content, flags=re.MULTILINE):
+    """Insert into a literal .bzl dict, raising ValueError for invalid targets."""
+    content = file_path.read_bytes()
+    node, versions = _parse_release_dict(
+        content.decode("utf-8"), dict_name, file_path,
+    )
+
+    if version_key in versions:
         print(f"  {version_key} already exists in {dict_name} in {file_path}")
         return
 
-    # Format the new entry
-    entry_str = format_entry(entry)
-    new_block = f'    "{version_key}": {{\n{entry_str}\n    }},'
+    # AST columns are UTF-8 byte offsets; splice bytes to preserve source exactly.
+    lines = content.splitlines(keepends=True)
+    line = lines[node.lineno - 1]
+    insert_pos = sum(len(part) for part in lines[:node.lineno - 1])
+    insert_pos += node.col_offset + 1
+    tail = line[node.col_offset + 1:]
+    newline = "\r\n" if b"\r\n" in content else "\n"
+    new_block = f'    "{version_key}": {{\n{format_entry(entry)}\n    }},\n'
 
-    # Find the dict and insert after the opening brace
-    # Pattern: `dict_name = {\n` — insert new entry right after
-    pattern = rf"({re.escape(dict_name)}\s*=\s*\{{)\n"
-    match = re.search(pattern, content)
-    if not match:
-        print(f"ERROR: Could not find '{dict_name}' dict in {file_path}")
-        sys.exit(1)
+    if not tail.strip() or tail.lstrip().startswith(b"#"):
+        # Keep whitespace and any comment on the opening-brace line in place.
+        insert_pos += len(tail)
+    else:
+        new_block = "\n" + new_block
 
-    insert_pos = match.end()
-    content = content[:insert_pos] + f"{new_block}\n" + content[insert_pos:]
-    file_path.write_text(content, encoding="utf-8")
+        if node.keys:
+            new_block += "    "
+
+    file_path.write_bytes(
+        content[:insert_pos]
+        + new_block.replace("\n", newline).encode("utf-8")
+        + content[insert_pos:]
+    )
     print(f"  Inserted {version_key} into {dict_name} in {file_path}")
 
 
@@ -305,20 +365,38 @@ def update_wasi_adapters_latest(
         _version: str,
         entry: dict) -> None:
     """Update the 'latest' alias in wasi_adapters."""
-    content = file_path.read_text(encoding="utf-8")
+    content = file_path.read_bytes()
+    node, _ = _parse_release_dict(content.decode("utf-8"), "wasi_adapters", file_path)
+    matches = [
+        value for key, value in zip(node.keys, node.values)
+        if isinstance(key, ast.Constant) and key.value == "latest"
+    ]
 
-    # Build the latest entry (same data, different key)
-    latest_str = format_entry(entry)
-    new_latest = f'    "latest": {{\n{latest_str}\n    }},'
+    if len(matches) != 1:
+        raise ValueError(
+            f"Expected a single 'latest' entry in wasi_adapters in {file_path}"
+        )
 
-    # Replace existing latest block
-    pattern = r'    "latest": \{[^}]*\{[^}]*\}[^}]*\{[^}]*\}\s*\},'
-    if re.search(pattern, content, flags=re.DOTALL):
-        content = re.sub(pattern, new_latest, content, flags=re.DOTALL)
-        file_path.write_text(content, encoding="utf-8")
-        print('  Updated "latest" alias in wasi_adapters')
-    else:
-        print('  WARNING: Could not find "latest" block in wasi_adapters')
+    value = matches[0]
+
+    if not isinstance(value, ast.Dict):
+        raise ValueError(  # noqa: TRY004 - malformed release-file content
+            f"wasi_adapters['latest'] must be a literal dictionary in {file_path}"
+        )
+
+    lines = content.splitlines(keepends=True)
+    start = sum(len(line) for line in lines[:value.lineno - 1]) + value.col_offset
+    end = sum(len(line) for line in lines[:value.end_lineno - 1]) + value.end_col_offset
+    line = lines[value.lineno - 1]
+    indent = len(line) - len(line.lstrip(b" \t"))
+    newline = "\r\n" if b"\r\n" in content else "\n"
+    replacement = "{\n" + format_entry(entry, indent=indent + 4) + "\n" + " " * indent + "}"
+    file_path.write_bytes(
+        content[:start]
+        + replacement.replace("\n", newline).encode("utf-8")
+        + content[end:]
+    )
+    print('  Updated "latest" alias in wasi_adapters')
 
 
 def main():
@@ -373,6 +451,7 @@ def main():
     # Handle extra files (e.g., node has two releases.bzl copies)
     for extra in cfg.get("extra_files", []):
         extra_path = REPO_ROOT / extra
+
         if extra_path.exists():
             insert_version_entry(
                 extra_path,

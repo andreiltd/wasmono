@@ -79,7 +79,7 @@ system_python_bootstrap_toolchain(
 download_wasi_sdk(
     name = "wasi_sdk",
     # renovate: datasource=github-releases depName=WebAssembly/wasi-sdk extractVersion=^wasi-sdk-(?<version>[\d.]+)$
-    version = "33.0",
+    version = "34.0",
 )
 
 cxx_wasi_toolchain(

@@ -8,7 +8,7 @@ load("//cxx/wasi:defs.bzl", "download_wasi_sdk", "cxx_wasi_toolchain")
 
 wasm_demo_toolchains()
 
-download_wasi_sdk(name = "wasi_sdk", version = "33.0")
+download_wasi_sdk(name = "wasi_sdk", version = "34.0")
 cxx_wasi_toolchain(name = "cxx_wasi", distribution = ":wasi_sdk", visibility = ["PUBLIC"])
 ```
 
@@ -20,14 +20,19 @@ load("@wasmono//toolchains/cxx/wasi:defs.bzl", "download_wasi_sdk", "cxx_wasi_to
 
 wasm_demo_toolchains()
 
-download_wasi_sdk(name = "wasi_sdk", version = "33.0")
+download_wasi_sdk(name = "wasi_sdk", version = "34.0")
 cxx_wasi_toolchain(name = "cxx_wasi", distribution = ":wasi_sdk", visibility = ["PUBLIC"])
 ```
 
 This creates all the WASM-related toolchain targets that wasmono rules expect:
 `node`, `wasm_tools`, `wit_bindgen`, `wac`, `wkg`, `jco`, `binaryen`, and
-`wasmtime`. The jco and AssemblyScript setup paths use pinned npm packages but
-require network access in local-only Buck actions when enabled. Optionally,
+`wasmtime`. The jco and AssemblyScript setup paths install pinned npm packages
+on the selected execution platform, which must have npm registry access.
+Node and npm installations are platform-bound, including runtime-native npm
+dependencies; they are not installed client-locally for a foreign platform.
+This macro selects host distributions. To use a different execution OS/CPU,
+configure distributions explicitly with `arch`/`os` overrides and register a
+matching execution platform. Optionally,
 `weval` can be enabled by setting `weval_version`. The `cxx_wasi` toolchain must
 be added separately (shown above) because it requires its own
 `download_wasi_sdk` call.
@@ -46,19 +51,19 @@ load(":node.bzl", "download_node", "node_toolchain")
 
 def wasm_demo_toolchains(
         # renovate: datasource=github-releases depName=bytecodealliance/wasm-tools
-        wasm_tools_version = "1.252.0",
+        wasm_tools_version = "1.259.0",
         # renovate: datasource=github-releases depName=bytecodealliance/wit-bindgen
-        wit_bindgen_version = "0.58.0",
+        wit_bindgen_version = "0.62.0",
         # renovate: datasource=github-releases depName=bytecodealliance/wac
-        wac_version = "0.10.1",
+        wac_version = "0.11.0",
         # renovate: datasource=github-releases depName=bytecodealliance/wasm-pkg-tools
-        wkg_version = "0.15.1",
+        wkg_version = "0.16.1",
         # renovate: datasource=github-releases depName=WebAssembly/binaryen versioning=loose extractVersion=^version_(?<version>\d+)$
-        binaryen_version = "130",
+        binaryen_version = "132",
         # renovate: datasource=github-releases depName=bytecodealliance/wasmtime
-        wasmtime_version = "46.0.0",
+        wasmtime_version = "48.0.2",
         # renovate: datasource=node-version depName=node
-        node_version = "26.3.1",
+        node_version = "26.8.2",
         # renovate: datasource=npm depName=@bytecodealliance/jco
         jco_version = DEFAULT_JCO_VERSION,
         asc_version = None,

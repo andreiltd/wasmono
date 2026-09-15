@@ -65,3 +65,11 @@ jobs:
       - name: Test external cell compatibility (Windows)
         if: runner.os == 'Windows'
         run: python tests/test_external_cell.py
+
+      - name: Run Python regression tests (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: python3 -B -m unittest discover -s tests -p 'test_*.py'
+
+      - name: Run Python regression tests (Windows)
+        if: runner.os == 'Windows'
+        run: python -B -m unittest discover -s tests -p 'test_*.py'

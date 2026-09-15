@@ -1,0 +1,4 @@
+package test:composition;
+
+let plug = new undeclared:plug {};
+export plug["api"] as "api";

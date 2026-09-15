@@ -5,7 +5,7 @@ and the Component Model. It can generate bindings for various target languages
 from WIT interface definitions.
 
 This toolchain provides a hermetic installation of wit-bindgen and exposes
-common subcommands as convenient wrappers.
+supported subcommands as direct RunInfo command prefixes.
 
 ## Examples
 
@@ -17,7 +17,7 @@ load("//wit:bindgen.bzl", "download_wit_bindgen", "wit_bindgen_toolchain")
 
 download_wit_bindgen(
     name = "wit_bindgen_dist",
-    version = "0.30.0",
+    version = "0.62.0",
 )
 
 wit_bindgen_toolchain(
@@ -28,14 +28,7 @@ wit_bindgen_toolchain(
 ```
 """
 
-load(
-    "@prelude//os_lookup:defs.bzl",
-    "ScriptLanguage",
-)
-load(
-    "@prelude//utils:cmd_script.bzl",
-    "cmd_script",
-)
+load("@prelude//:artifacts.bzl", "single_artifact")
 load(
     "@prelude//:prelude.bzl",
     "native",
@@ -65,7 +58,7 @@ WitBindgenDistributionInfo = provider(
 def _wit_bindgen_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
     # Create a copy of the wit-bindgen binary for easy access
     dst = ctx.actions.declare_output("wit-bindgen" + ctx.attrs.suffix)
-    dist_output = ctx.attrs.dist[DefaultInfo].default_outputs[0]
+    dist_output = single_artifact(ctx.attrs.dist).default_output
     src = dist_output.project(ctx.attrs.prefix + "/wit-bindgen" + ctx.attrs.suffix)
 
     ctx.actions.copy_file(dst.as_output(), src)
@@ -150,41 +143,23 @@ WitBindgenInfo = provider(
         "rust": provider_field(RunInfo),
         "cxx": provider_field(RunInfo),
         "c": provider_field(RunInfo),
-        "print": provider_field(RunInfo),
         "markdown": provider_field(RunInfo),
     },
     doc = "Toolchain info provider for wit-bindgen"
 )
 
 def _wit_bindgen_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
-    dist = ctx.attrs.distribution[WitBindgenDistributionInfo]
     wit_bindgen = ctx.attrs.distribution[RunInfo]
-
-    # Create wrapper scripts for common wit-bindgen subcommands
-    def create_subcommand(name, subcommand):
-        return cmd_script(
-            actions = ctx.actions,
-            name = name,
-            cmd = cmd_args(wit_bindgen, subcommand),
-            language = ScriptLanguage("bat" if dist.os == "windows" else "sh"),
-        )
-
-    wit_bindgen_rust = create_subcommand("wit_bindgen_rust", "rust")
-    wit_bindgen_cxx = create_subcommand("wit_bindgen_cxx", "cpp")
-    wit_bindgen_c = create_subcommand("wit_bindgen_c", "c")
-    wit_bindgen_print = create_subcommand("wit_bindgen_print", "print")
-    wit_bindgen_markdown = create_subcommand("wit_bindgen_markdown", "markdown")
 
     return [
         ctx.attrs.distribution[DefaultInfo],
         ctx.attrs.distribution[RunInfo],  # Direct access to wit-bindgen binary
         WitBindgenInfo(
             wit_bindgen = wit_bindgen,
-            rust = RunInfo(args = cmd_args(wit_bindgen_rust)),
-            cxx = RunInfo(args = cmd_args(wit_bindgen_cxx)),
-            c = RunInfo(args = cmd_args(wit_bindgen_c)),
-            print = RunInfo(args = cmd_args(wit_bindgen_print)),
-            markdown = RunInfo(args = cmd_args(wit_bindgen_markdown)),
+            rust = RunInfo(args = cmd_args(wit_bindgen, "rust")),
+            cxx = RunInfo(args = cmd_args(wit_bindgen, "cpp")),
+            c = RunInfo(args = cmd_args(wit_bindgen, "c")),
+            markdown = RunInfo(args = cmd_args(wit_bindgen, "markdown")),
         ),
     ]
 

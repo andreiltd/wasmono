@@ -1,0 +1,5 @@
+package test:api@1.2.3;
+
+world api {
+    export answer: func() -> string;
+}

@@ -13,7 +13,7 @@ load("//wasm:weval.bzl", "download_weval", "weval_toolchain")
 
 download_weval(
     name = "weval_dist",
-    version = "0.4.1",
+    version = "0.5.0",
 )
 
 weval_toolchain(
@@ -24,6 +24,7 @@ weval_toolchain(
 ```
 """
 
+load("@prelude//:artifacts.bzl", "single_artifact")
 load(
     "@prelude//:prelude.bzl",
     "native",
@@ -52,7 +53,7 @@ WevalDistributionInfo = provider(
 
 def _weval_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
     dst = ctx.actions.declare_output("weval" + ctx.attrs.suffix)
-    dist_output = ctx.attrs.dist[DefaultInfo].default_outputs[0]
+    dist_output = single_artifact(ctx.attrs.dist).default_output
     src = dist_output.project(ctx.attrs.prefix + "/weval" + ctx.attrs.suffix)
 
     ctx.actions.copy_file(dst.as_output(), src)

@@ -2,7 +2,7 @@
 
 load("@prelude//rust:cargo_buildscript.bzl", "buildscript_run")
 load("@prelude//rust:cargo_package.bzl", "cargo")
-load("//third-party/macros:rust_third_party.bzl", "third_party_rust_cxx_library", "third_party_rust_prebuilt_cxx_library")
+load("//third-party/macros:rust_third_party.bzl", "third_party_rust")
 
 http_archive(
     name = "aho-corasick-1.1.4.crate",
@@ -5086,7 +5086,7 @@ cargo.rust_library(
     ],
 )
 
-third_party_rust_cxx_library(
+third_party_rust.cxx_library(
     name = "wasmtime-internal-fiber-46-windows",
     srcs = [":wasmtime-internal-fiber-46.0.0.crate[src/windows.c]"],
     headers = [],

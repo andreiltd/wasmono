@@ -44,13 +44,17 @@ def detect_demo_bzl_changes(base_ref: str) -> list[tuple[str, str]]:
     """Detect version parameter changes in demo.bzl."""
     diff = git_diff(base_ref, "toolchains/wasm/demo.bzl")
     updates = []
+
     for line in diff.splitlines():
         m = re.match(r'^\+\s+(\w+)_version\s*=\s*"([^"]+)"', line)
+
         if m:
             param_name, version = m.group(1), m.group(2)
             tool_name = TOOL_NAME_MAP.get(param_name)
+
             if tool_name:
                 updates.append((tool_name, version))
+
     return updates
 
 
@@ -58,10 +62,13 @@ def detect_wasi_sdk_changes(base_ref: str) -> list[tuple[str, str]]:
     """Detect WASI SDK version changes in toolchains/BUCK."""
     diff = git_diff(base_ref, "toolchains/BUCK")
     updates = []
+
     for line in diff.splitlines():
         m = re.match(r'^\+\s+version\s*=\s*"([^"]+)"', line)
+
         if m:
             updates.append(("wasi-sdk", m.group(1)))
+
     return updates
 
 

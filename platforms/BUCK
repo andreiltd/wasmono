@@ -4,7 +4,7 @@ load(":defs.bzl", "cache_execution_platform")
 platform(
     name = "wasm32_wasi",
     constraint_values = [
-        "config//cpu/constraints:wasm32",
+        "wasmono//wasm/constraints:wasm32",
         "config//os/constraints:wasi",
     ],
 )

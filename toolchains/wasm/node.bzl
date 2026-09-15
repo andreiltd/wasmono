@@ -2,6 +2,9 @@
 
 Downloads a prebuilt Node.js distribution and exposes `node` and `npm`
 binaries for use by rules that need a JavaScript runtime (e.g. jco, asc).
+The distribution is compatible only with its declared OS and architecture.
+Execution-platform selection must match those constraints, including when
+`arch` or `os` overrides select a distribution foreign to the Buck client.
 
 ## Examples
 
@@ -11,7 +14,7 @@ load("//wasm:node.bzl", "download_node", "node_toolchain")
 
 download_node(
     name = "node_dist",
-    version = "26.3.1",
+    version = "26.8.2",
 )
 
 node_toolchain(
@@ -22,6 +25,7 @@ node_toolchain(
 ```
 """
 
+load("@prelude//:artifacts.bzl", "single_artifact")
 load(
     "@prelude//:prelude.bzl",
     "native",
@@ -33,6 +37,7 @@ load(
 load(
     ":host.bzl",
     "host_platform",
+    "platform_constraints",
 )
 load(
     ":release_utils.bzl",
@@ -62,7 +67,7 @@ NodeInfo = provider(
 )
 
 def _node_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
-    dist_output = ctx.attrs.dist[DefaultInfo].default_outputs[0]
+    dist_output = single_artifact(ctx.attrs.dist).default_output
     prefix = ctx.attrs.prefix
 
     is_windows = ctx.attrs.os == "windows"
@@ -146,8 +151,8 @@ def download_node(
         version: Node.js version to download (e.g. "26.3.1").
         releases: Optional dict of custom releases to overlay on built-in
             releases. Format: ``{"version": {"platform": {"url": "...", "shasum": "...", "prefix": "..."}}}``.
-        arch: Override host architecture detection.
-        os: Override host OS detection.
+        arch: Override host architecture detection; requires a matching platform.
+        os: Override host OS detection; requires a matching platform.
     """
     arch, os = host_platform(arch, os)
 
@@ -173,6 +178,7 @@ def download_node(
         version = version,
         arch = arch,
         os = os,
+        target_compatible_with = platform_constraints(arch, os),
     )
 
 # ---------------------------------------------------------------------------

@@ -7,10 +7,15 @@ Component Model.
 Two toolchain flavors are provided:
 
 - `system_jco_toolchain`: expects `jco` on the system PATH.
-- `jco_toolchain`: uses a downloaded Node.js, then runs npm install as a local-only
-  action. This pins the npm package version and can optionally use a lockfile to
-  pin transitive dependencies, but still needs network access during the Buck
-  action.
+- `jco_toolchain`: uses downloaded Node.js and installs npm packages on the
+  selected execution platform. That platform needs npm registry access.
+  Installation and execution OS/CPU constraints match the Node distribution,
+  so runtime-native dependencies are not installed on the Buck client for a
+  different platform. The default pins the npm package version; an optional
+  lockfile enables `npm ci` to pin transitive dependencies as well.
+
+The downloaded CLI is resolved from the installed package's `bin` metadata,
+supporting both older `src/` and newer `dist/` layouts without version checks.
 
 ## Examples
 
@@ -20,9 +25,9 @@ Two toolchain flavors are provided:
 load("//wasm:node.bzl", "download_node", "node_toolchain")
 load("//wasm:jco.bzl", "install_jco", "jco_toolchain")
 
-download_node(name = "node_dist", version = "26.3.1")
+download_node(name = "node_dist", version = "26.8.2")
 node_toolchain(name = "node", distribution = ":node_dist", visibility = ["PUBLIC"])
-install_jco(name = "jco_dist", version = "1.24.3", node = ":node_dist")
+install_jco(name = "jco_dist", version = "1.33.0", node = ":node_dist")
 jco_toolchain(name = "jco", distribution = ":jco_dist", visibility = ["PUBLIC"])
 ```
 
@@ -45,8 +50,10 @@ system_jco_toolchain(name = "jco", visibility = ["PUBLIC"])
 ```
 """
 
+load("@prelude//:artifacts.bzl", "single_artifact")
 load(
     "@prelude//os_lookup:defs.bzl",
+    "Os",
     "OsLookup",
 )
 load(
@@ -61,6 +68,7 @@ load(
     ":node.bzl",
     "NodeInfo",
 )
+load(":host.bzl", "native_execution_compatible_with")
 
 JcoInfo = provider(
     # @unsorted-dict-items
@@ -72,42 +80,31 @@ JcoInfo = provider(
     doc = "Toolchain info provider for jco",
 )
 
-DEFAULT_JCO_VERSION = "1.24.3"
+DEFAULT_JCO_VERSION = "1.33.0"
 
 # ---------------------------------------------------------------------------
 # System jco toolchain (non-hermetic, requires jco on PATH)
 # ---------------------------------------------------------------------------
 
 def _system_jco_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
-    lang = ctx.attrs._exec_os_type[OsLookup].script
-
-    jco = cmd_script(
-        actions = ctx.actions,
-        name = "jco",
-        cmd = cmd_args("jco"),
-        language = lang,
-    )
-
-    componentize = cmd_script(
-        actions = ctx.actions,
-        name = "jco_componentize",
-        cmd = cmd_args("jco", "componentize"),
-        language = lang,
-    )
-
-    run = cmd_script(
-        actions = ctx.actions,
-        name = "jco_run",
-        cmd = cmd_args("jco", "run"),
-        language = lang,
-    )
+    exec_os = ctx.attrs._exec_os_type[OsLookup]
+    jco_cmd = cmd_args("jco")
+    if exec_os.os == Os("windows"):
+        # npm's system jco entrypoint is a .cmd file and needs shell dispatch.
+        jco_cmd = cmd_script(
+            actions = ctx.actions,
+            name = "jco",
+            cmd = jco_cmd,
+            language = exec_os.script,
+        )
+    jco = RunInfo(args = jco_cmd)
 
     return [
         DefaultInfo(),
         JcoInfo(
-            jco = RunInfo(args = cmd_args(jco)),
-            componentize = RunInfo(args = cmd_args(componentize)),
-            run = RunInfo(args = cmd_args(run)),
+            jco = jco,
+            componentize = RunInfo(args = cmd_args(jco, "componentize")),
+            run = RunInfo(args = cmd_args(jco, "run")),
         ),
     ]
 
@@ -156,7 +153,6 @@ def _install_jco_impl(ctx: AnalysisContext) -> list[Provider]:
     ctx.actions.run(
         cmd,
         category = category,
-        local_only = True,  # needs network access
     )
 
     return [DefaultInfo(default_output = out_dir)]
@@ -164,9 +160,9 @@ def _install_jco_impl(ctx: AnalysisContext) -> list[Provider]:
 _install_jco = rule(
     impl = _install_jco_impl,
     attrs = {
-        "node": attrs.exec_dep(
+        "node": attrs.dep(
             providers = [NodeInfo],
-            doc = "Downloaded Node.js distribution providing node/npm",
+            doc = "Downloaded Node.js matching the installation platform",
         ),
         "version": attrs.string(
             default = DEFAULT_JCO_VERSION,
@@ -194,7 +190,10 @@ def install_jco(
         package_json: [None, str] = None,
         package_lock: [None, str] = None,
         npm_ci_workspace: [None, str] = None):
-    """Install jco via npm using the downloaded Node.js distribution.
+    """Install jco via npm on its consuming execution platform.
+
+    Registry access is required there. Node's distribution constraints determine
+    compatible platforms, including for jco's runtime-native npm dependencies.
 
     Args:
         name: Target name for the jco installation.
@@ -215,6 +214,7 @@ def install_jco(
         package_json = package_json,
         package_lock = package_lock,
         _npm_ci_workspace = npm_ci_workspace,
+        exec_compatible_with = native_execution_compatible_with(),
     )
 
 # ---------------------------------------------------------------------------
@@ -223,42 +223,28 @@ def install_jco(
 
 def _jco_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
     node_info = ctx.attrs._node_toolchain[NodeInfo]
-    jco_dist = ctx.attrs.distribution[DefaultInfo].default_outputs[0]
-    lang = ctx.attrs._exec_os_type[OsLookup].script
+    dist_info = ctx.attrs.distribution[DefaultInfo]
+    jco_dist = single_artifact(ctx.attrs.distribution).default_output
 
-    # Create wrapper scripts: node <jco_workspace>/node_modules/.bin/jco <subcommand> ...
-    jco_path = cmd_args(
+    jco_package = cmd_args(
         jco_dist,
-        format = "{}/node_modules/@bytecodealliance/jco/src/jco.js",
+        format = "{}/node_modules/@bytecodealliance/jco",
     )
 
-    jco = cmd_script(
-        actions = ctx.actions,
-        name = "jco",
-        cmd = cmd_args(node_info.node, jco_path),
-        language = lang,
-    )
-
-    componentize = cmd_script(
-        actions = ctx.actions,
-        name = "jco_componentize",
-        cmd = cmd_args(node_info.node, jco_path, "componentize"),
-        language = lang,
-    )
-
-    run = cmd_script(
-        actions = ctx.actions,
-        name = "jco_run",
-        cmd = cmd_args(node_info.node, jco_path, "run"),
-        language = lang,
-    )
+    jco = RunInfo(args = cmd_args(
+        node_info.node,
+        ctx.attrs._npm_bin,
+        jco_package,
+        "jco",
+        hidden = dist_info.other_outputs,
+    ))
 
     return [
         DefaultInfo(),
         JcoInfo(
-            jco = RunInfo(args = cmd_args(jco)),
-            componentize = RunInfo(args = cmd_args(componentize)),
-            run = RunInfo(args = cmd_args(run)),
+            jco = jco,
+            componentize = RunInfo(args = cmd_args(jco, "componentize")),
+            run = RunInfo(args = cmd_args(jco, "run")),
         ),
     ]
 
@@ -272,7 +258,7 @@ jco_toolchain = rule(
             default = "toolchains//:node",
             providers = [NodeInfo],
         ),
-        "_exec_os_type": buck.exec_os_type_arg(),
+        "_npm_bin": attrs.source(default = "wasmono//tools:npm_bin"),
     },
     is_toolchain_rule = True,
     doc = "Hermetic jco toolchain using downloaded Node.js + npm-installed jco",

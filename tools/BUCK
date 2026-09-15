@@ -1,23 +1,42 @@
-export_file(
+python_bootstrap_binary(
     name = "test_wrapper",
-    src = "test_wrapper.py",
+    main = "test_wrapper.py",
     visibility = ["PUBLIC"],
 )
 
-export_file(
+python_bootstrap_binary(
+    name = "wac_compose",
+    main = "wac_compose.py",
+    visibility = ["PUBLIC"],
+)
+
+python_bootstrap_binary(
+    name = "wkg_get",
+    main = "wkg_get.py",
+    visibility = ["PUBLIC"],
+)
+
+python_bootstrap_binary(
     name = "asc_build",
-    src = "asc_build.py",
+    main = "asc_build.py",
     visibility = ["PUBLIC"],
 )
 
-export_file(
+python_bootstrap_binary(
     name = "wit_fetch",
-    src = "wit_fetch.py",
+    main = "wit_fetch.py",
     visibility = ["PUBLIC"],
 )
 
 export_file(
     name = "npm_ci_workspace",
     src = "npm_ci_workspace.mjs",
+    visibility = ["PUBLIC"],
+)
+
+export_file(
+    name = "npm_bin",
+    src = "npm_bin.mjs",
+    out = "npm_bin.mjs",
     visibility = ["PUBLIC"],
 )

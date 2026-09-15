@@ -1,6 +1,38 @@
 """Release metadata for Node.js distributions."""
 
 node_releases = {
+    "26.8.2": {
+        "aarch64-linux": {
+            "shasum": "81d8f0fdea9dcd3bfdcfeafc5f8359c151f097e9880b0007c0645ca670d07971",
+            "url": "https://nodejs.org/dist/v26.8.2/node-v26.8.2-linux-arm64.tar.xz",
+            "prefix": "node-v26.8.2-linux-arm64",
+        },
+        "aarch64-macos": {
+            "shasum": "f58e5044b938a3174184de4aaf1d2bbfcfff812e88220ff08e9221c09f5c8677",
+            "url": "https://nodejs.org/dist/v26.8.2/node-v26.8.2-darwin-arm64.tar.xz",
+            "prefix": "node-v26.8.2-darwin-arm64",
+        },
+        "aarch64-windows": {
+            "shasum": "a4e8362e268f1fcf1735f046e0adb088b28eeb400fb1c33fe5cc94d1a3d42570",
+            "url": "https://nodejs.org/dist/v26.8.2/node-v26.8.2-win-arm64.zip",
+            "prefix": "node-v26.8.2-win-arm64",
+        },
+        "x86_64-linux": {
+            "shasum": "40e1d3225c1c9ae9a2671c98ecb9857e4d5555026394f348645676798840d5c5",
+            "url": "https://nodejs.org/dist/v26.8.2/node-v26.8.2-linux-x64.tar.xz",
+            "prefix": "node-v26.8.2-linux-x64",
+        },
+        "x86_64-macos": {
+            "shasum": "49950999366bf6cd47c8c8fd3593aa82fb5efed494937b380b85677338285ca0",
+            "url": "https://nodejs.org/dist/v26.8.2/node-v26.8.2-darwin-x64.tar.xz",
+            "prefix": "node-v26.8.2-darwin-x64",
+        },
+        "x86_64-windows": {
+            "shasum": "cf02f5d0c06c794b84f277177d5cf3743d0924ca49f6641cd435dd7cb6ee9085",
+            "url": "https://nodejs.org/dist/v26.8.2/node-v26.8.2-win-x64.zip",
+            "prefix": "node-v26.8.2-win-x64",
+        },
+    },
     "26.3.1": {
         "aarch64-linux": {
             "shasum": "c021380e64d1314d1218ab1f31e0f5b0f28f1f54ac779ef72a16c2bda0ca5c30",

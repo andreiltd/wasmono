@@ -1,0 +1,6 @@
+package test:composition;
+
+let unversioned = new test:plug {};
+let versioned = new test:plug@1.2.3 {};
+export unversioned["api"] as "api";
+export versioned["api"] as "versioned-api";

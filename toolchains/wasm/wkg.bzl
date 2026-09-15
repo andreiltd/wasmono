@@ -1,11 +1,4 @@
-load(
-    "@prelude//os_lookup:defs.bzl",
-    "ScriptLanguage",
-)
-load(
-    "@prelude//utils:cmd_script.bzl",
-    "cmd_script",
-)
+load("@prelude//:artifacts.bzl", "single_artifact")
 load(
     "@prelude//:prelude.bzl",
     "native",
@@ -44,7 +37,7 @@ def _wkg_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
     # Create a copy of the wkg binary
     dst = ctx.actions.declare_output("wkg" + ctx.attrs.suffix)
 
-    ctx.actions.copy_file(dst.as_output(), ctx.attrs.dist[DefaultInfo].default_outputs[0])
+    ctx.actions.copy_file(dst.as_output(), single_artifact(ctx.attrs.dist).default_output)
 
     wkg_args = cmd_args(
         [dst],
@@ -130,33 +123,18 @@ WkgInfo = provider(
 )
 
 def _wkg_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
-    dist = ctx.attrs.distribution[WkgDistributionInfo]
     wkg = ctx.attrs.distribution[RunInfo]
-
-    def create_subcommand(name, subcommand):
-        return cmd_script(
-            actions = ctx.actions,
-            name = name,
-            cmd = cmd_args(wkg, subcommand),
-            language = ScriptLanguage("bat" if dist.os == "windows" else "sh"),
-        )
-
-    wkg_config = create_subcommand("wkg_config", "config")
-    wkg_get = create_subcommand("wkg_get", "get")
-    wkg_publish = create_subcommand("wkg_publish", "publish")
-    wkg_oci = create_subcommand("wkg_oci", "oci")
-    wkg_wit = create_subcommand("wkg_wit", "wit")
 
     return [
         ctx.attrs.distribution[DefaultInfo],
         ctx.attrs.distribution[RunInfo],
         WkgInfo(
             wkg = wkg,
-            config = RunInfo(args = cmd_args(wkg_config)),
-            get = RunInfo(args = cmd_args(wkg_get)),
-            publish = RunInfo(args = cmd_args(wkg_publish)),
-            oci = RunInfo(args = cmd_args(wkg_oci)),
-            wit = RunInfo(args = cmd_args(wkg_wit)),
+            config = RunInfo(args = cmd_args(wkg, "config")),
+            get = RunInfo(args = cmd_args(wkg, "get")),
+            publish = RunInfo(args = cmd_args(wkg, "publish")),
+            oci = RunInfo(args = cmd_args(wkg, "oci")),
+            wit = RunInfo(args = cmd_args(wkg, "wit")),
         ),
     ]
 

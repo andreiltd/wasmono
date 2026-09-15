@@ -66,7 +66,6 @@ load(
     "@prelude//cxx:preprocessor.bzl",
     "CPreprocessor",
     "CPreprocessorArgs",
-    "CPreprocessorInfo",
     "cxx_merge_cpreprocessors",
 )
 load(
@@ -81,11 +80,10 @@ load("@prelude//linking:link_groups.bzl", "merge_link_group_lib_info")
 load(
     "@prelude//linking:shared_libraries.bzl",
     "SharedLibraries",
-    "SharedLibraryInfo",
     "merge_shared_libraries",
 )
-load("@prelude//python_bootstrap:python_bootstrap.bzl", "PythonBootstrapToolchainInfo")
 load("@prelude//test:inject_test_run_info.bzl", "inject_test_run_info")
+load("@prelude//utils:utils.bzl", "dedupe_by_value")
 
 load("@prelude//decls:common.bzl", buck = "buck")
 load("@prelude//os_lookup:defs.bzl", "Os", "OsLookup")
@@ -124,11 +122,13 @@ WitBindingInfo = provider(
     doc = "Provider for WIT binding generation metadata",
 )
 
-_WIT_INPUT_ATTR = attrs.one_of(attrs.source(allow_directory = True), attrs.dep())
+_WIT_INPUT_ATTR = attrs.one_of(attrs.dep(), attrs.source(allow_directory = True))
+_PINNED_PACKAGE = regex("^[^@]+@[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$")
+_SHA256 = regex("^[0-9a-fA-F]{64}$")
 
 def _world_to_snake_case(world: str) -> str:
     world_part = world.split(":")[-1]
-    world_base = world_part.split("/")[-1]
+    world_base = world_part.split("/")[-1].split("@", 1)[0]
 
     s = world_base.replace("-", "_")
     r = ""
@@ -141,86 +141,59 @@ def _world_to_snake_case(world: str) -> str:
             r += c
     return r
 
-def _wasm_modules_from_deps(deps):
-    """Extract core .wasm module artifacts from configured deps."""
-    results = []
-    for dep in deps:
-        if WasmInfo in dep:
-            wi = dep[WasmInfo]
-            if getattr(wi, "module", None):
-                # module is a single artifact
-                results.append(wi.module)
-            continue
-
-        if DefaultInfo in dep:
-            for out in dep[DefaultInfo].default_outputs:
-                if out.basename.endswith(".wasm") and not out.basename.endswith(".component.wasm"):
-                    results.append(out)
-                    continue
-    return results
-
-def _components_from_deps(deps):
-    """Extract .component.wasm artifacts from configured deps."""
+def _wasm_artifacts_from_deps(deps, kinds: list[str], declared_components: bool = False) -> list[Artifact]:
+    """Prefer typed Wasm artifacts, falling back to filenames for untyped deps."""
     results = []
     for dep in deps:
         if WasmInfo in dep:
             info = dep[WasmInfo]
-            if getattr(info, "component", None):
+            if "module" in kinds and info.module != None:
+                results.append(info.module)
+            if "component" in kinds and info.component != None:
                 results.append(info.component)
             continue
 
         if DefaultInfo in dep:
             for out in dep[DefaultInfo].default_outputs:
                 if out.basename.endswith(".component.wasm"):
-                    results.append(out)
+                    kind = "component"
+                elif out.basename.endswith(".wasm"):
+                    kind = "component" if declared_components else "module"
+                elif out.basename.endswith(".wat"):
+                    kind = "wat"
+                else:
                     continue
-    return results
+                if kind in kinds:
+                    results.append(out)
+    return dedupe_by_value(results)
+
+def _wasm_modules_from_deps(deps):
+    return _wasm_artifacts_from_deps(deps, ["module"])
+
+def _components_from_deps(deps):
+    return _wasm_artifacts_from_deps(deps, ["component"])
 
 def _declared_components_from_deps(deps):
     """Extract artifacts that callers explicitly identify as components."""
-    results = _components_from_deps(deps)
-    for dep in deps:
-        if WasmInfo in dep:
-            continue
-        if DefaultInfo in dep:
-            for out in dep[DefaultInfo].default_outputs:
-                if out.basename.endswith(".wasm"):
-                    results.append(out)
-                    continue
-    return results
-
-def _wat_files_from_deps(deps):
-    """Extract .wat artifacts from configured deps."""
-    results = []
-    for dep in deps:
-        if DefaultInfo in dep:
-            for out in dep[DefaultInfo].default_outputs:
-                if out.basename.endswith(".wat"):
-                    results.append(out)
-                    continue
-    return results
+    return _wasm_artifacts_from_deps(deps, ["component"], declared_components = True)
 
 def _all_wasm_files_from_deps(deps):
-    """Collect modules, components, and wat files from deps."""
-    modules = _wasm_modules_from_deps(deps)
-    components = _components_from_deps(deps)
-    wats = _wat_files_from_deps(deps)
-    return modules + components + wats
+    return _wasm_artifacts_from_deps(deps, ["module", "component", "wat"])
 
-def _wit_artifacts_from_dep(dep):
-    """Extract WIT artifacts from a configured dependency."""
+def _wit_metadata_from_dep(dep):
     results = []
-
     if WasmInfo in dep:
         results.extend(dep[WasmInfo].wit)
-
     if WitBindingInfo in dep:
         results.extend(dep[WitBindingInfo].wit)
+    return dedupe_by_value(results) if results or WitBindingInfo in dep else None
 
-    if not results and DefaultInfo in dep:
-        results.extend(dep[DefaultInfo].default_outputs)
-
-    return results
+def _wit_artifacts_from_dep(dep):
+    """Use WIT metadata before falling back to an unannotated file/package."""
+    metadata = _wit_metadata_from_dep(dep)
+    if metadata != None:
+        return metadata
+    return dedupe_by_value(dep[DefaultInfo].default_outputs)
 
 def _wit_artifacts_from_inputs(inputs):
     """Resolve a list of WIT source/dependency inputs to artifacts."""
@@ -229,10 +202,13 @@ def _wit_artifacts_from_inputs(inputs):
         if isinstance(input, Artifact):
             results.append(input)
         elif isinstance(input, Dependency):
-            results.extend(_wit_artifacts_from_dep(input))
+            artifacts = _wit_artifacts_from_dep(input)
+            if not artifacts:
+                fail("WIT input {} provides no WIT artifacts".format(input.label))
+            results.extend(artifacts)
         else:
             fail("Unexpected WIT input type: {}".format(type(input)))
-    return results
+    return dedupe_by_value(results)
 
 def _wit_artifacts_from_optional_input(input):
     return [] if input == None else _wit_artifacts_from_inputs([input])
@@ -264,7 +240,12 @@ def _wasm_component_impl(ctx: AnalysisContext) -> list[Provider]:
     if ctx.attrs.adapter != None and ctx.attrs.wasi == "wasip2" and not ctx.attrs.skip_validation:
         fail("wasm_component: Preview 1 adapters require wasi = 'wasip1'. Set skip_validation = True only if the input is already compatible.")
 
-    wits = _wit_artifacts_from_optional_input(ctx.attrs.wit)
+    source = ctx.attrs.component if ctx.attrs.component != None else ctx.attrs.module
+    wits = (
+        _wit_artifacts_from_optional_input(ctx.attrs.wit)
+        if ctx.attrs.wit != None
+        else _wit_metadata_from_dep(source) or []
+    )
     if ctx.attrs.component:
         component_file = _resolve_single_from_deps([ctx.attrs.component], _declared_components_from_deps, "component wasm")
         return [
@@ -663,10 +644,7 @@ def _wit_bindgen_c_impl(ctx: AnalysisContext) -> list[Provider]:
     outputs = {
         "srcs": [ctx.actions.declare_output(f"{snake}.c")],
         "objs": [ctx.actions.declare_output(f"{snake}_component_type.o")],
-        "headers": [
-            ctx.actions.declare_output(f"{snake}.h"),
-            ctx.actions.declare_output("wit.h")
-        ],
+        "headers": [ctx.actions.declare_output(f"{snake}.h")],
     }
 
     extra_args = []
@@ -684,7 +662,7 @@ wit_bindgen_c = rule(
     impl = _wit_bindgen_c_impl,
     attrs = _wit_bindgen_cxx_attrs | {
         "no_helpers": attrs.bool(default = False, doc = "Skip emitting component allocation helper functions"),
-        "string_encoding": attrs.option(attrs.enum(["utf8", "utf16", "latin1"]), default = None, doc = "Set component string encoding"),
+        "string_encoding": attrs.option(attrs.enum(["utf8", "utf16"]), default = None, doc = "Set component string encoding supported by the C generator"),
     },
     doc = "Generates C bindings from WIT interface definitions using wit-bindgen"
 )
@@ -718,7 +696,7 @@ wit_bindgen_cxx = rule(
 
 def _wit_to_markdown_impl(ctx: AnalysisContext) -> list[Provider]:
     wit_bindgen_info = ctx.attrs._wit_bindgen_toolchain[WitBindgenInfo]
-    output_file = ctx.actions.declare_output("{}.md".format(ctx.label.name))
+    output_dir = ctx.actions.declare_output(ctx.label.name, dir = True)
 
     all_wits = _wit_artifacts_from_inputs(ctx.attrs.wit)
     if not all_wits:
@@ -732,11 +710,11 @@ def _wit_to_markdown_impl(ctx: AnalysisContext) -> list[Provider]:
         cmd.add("--world")
         cmd.add(ctx.attrs.world)
 
-    cmd.add("-o")
-    cmd.add(output_file.as_output())
+    cmd.add("--out-dir")
+    cmd.add(output_dir.as_output())
 
     ctx.actions.run(cmd, category = "wit_to_markdown")
-    return [ DefaultInfo(default_output = output_file) ]
+    return [ DefaultInfo(default_output = output_dir) ]
 
 wit_to_markdown = rule(
     impl = _wit_to_markdown_impl,
@@ -745,7 +723,7 @@ wit_to_markdown = rule(
         "world": attrs.option(attrs.string(), default = None, doc = "Optional world name to document"),
         "_wit_bindgen_toolchain": attrs.toolchain_dep(default = "toolchains//:wit_bindgen", providers = [WitBindgenInfo]),
     },
-    doc = "Generates Markdown documentation from WIT interface definitions"
+    doc = "Generates a documentation directory from WIT interface definitions"
 )
 
 # ============================================================================
@@ -763,35 +741,21 @@ def _wasm_plug_impl(ctx: AnalysisContext) -> list[Provider]:
      - Emits a single `.component.wasm` output artifact.
     """
 
-    socket_dep = ctx.attrs.socket
-    socket_registry = ctx.attrs.socket_registry
+    if ctx.attrs.socket_registry != None or ctx.attrs.plugs_registry:
+        fail("wasm_plug: inline registry inputs are no longer supported; define pinned wasm_package targets and pass them through 'socket' and 'plugs'")
+    if ctx.attrs.socket == None:
+        fail("wasm_plug: 'socket' is required")
+    if not ctx.attrs.plugs:
+        fail("wasm_plug: 'plugs' must contain at least one component dependency")
 
-    if socket_dep and socket_registry:
-        fail("wasm_plug: specify exactly one of 'socket' or 'socket_registry' (registry name)")
+    socket_arg = _resolve_single_from_deps([ctx.attrs.socket], _components_from_deps, "socket component")
 
-    if not socket_dep and not socket_registry:
-        fail("wasm_plug: one of 'socket' or 'socket_registry' (registry name) is required")
-
-    plugs_deps = list(ctx.attrs.plugs) if ctx.attrs.plugs else []
-    plugs_registry = list(ctx.attrs.plugs_registry) if ctx.attrs.plugs_registry else []
-
-    socket_arg = None
-    if socket_dep:
-        socket_arg = _resolve_single_from_deps([socket_dep], _components_from_deps, "socket component")
-    else:
-        socket_arg = socket_registry
-
-    # Resolve plug artifacts from deps; allow either component or core modules as a fallback
     plug_artifacts = []
-    for p in plugs_deps:
-        comps = _components_from_deps([p])
-        if len(comps) > 0:
-            plug_artifacts.extend(comps)
-            continue
-        mods = _wasm_modules_from_deps([p])
-        if len(mods) > 0:
-            plug_artifacts.extend(mods)
-            continue
+    for dep in ctx.attrs.plugs:
+        artifacts = _components_from_deps([dep]) or _wasm_modules_from_deps([dep])
+        if not artifacts:
+            fail("wasm_plug: plug {} provides no component or core Wasm module".format(dep.label))
+        plug_artifacts.extend(artifacts)
 
     output_name = ctx.attrs.output if ctx.attrs.output else "{}.component.wasm".format(ctx.label.name)
     output_file = ctx.actions.declare_output(output_name)
@@ -799,7 +763,7 @@ def _wasm_plug_impl(ctx: AnalysisContext) -> list[Provider]:
     wac_info = ctx.attrs._wac_toolchain[WacInfo]
     cmd = cmd_args(wac_info.plug)
 
-    for plug in plug_artifacts + plugs_registry:
+    for plug in plug_artifacts:
         cmd.add("--plug")
         cmd.add(plug)
 
@@ -823,21 +787,23 @@ wasm_plug = rule(
     attrs = {
         "socket": attrs.option(
             attrs.transition_dep(cfg = wasm_transition),
+            default = None,
             doc = "Configured dep that produces the socket component (.component.wasm)",
         ),
         "socket_registry": attrs.option(
             attrs.string(),
             default = None,
-            doc = "Registry package name for the socket (e.g. 'my-namespace:package-name'). Mutually exclusive with socket.",
+            doc = "Removed: use a pinned wasm_package dependency in socket instead",
         ),
         "plugs": attrs.list(
             attrs.transition_dep(cfg = wasm_transition),
+            default = [],
             doc = "List of configured deps that produce plug components (or modules) to be plugged into the socket",
         ),
         "plugs_registry": attrs.list(
             attrs.string(),
             default = [],
-            doc = "List of registry package names to use as plugs (e.g. ['ns:pkgA', 'ns:pkgB']). These are passed verbatim to `wac plug --plug`.",
+            doc = "Removed: use pinned wasm_package dependencies in plugs instead",
         ),
         "output": attrs.option(
             attrs.string(),
@@ -875,6 +841,10 @@ def _wasm_package_impl(ctx: AnalysisContext) -> list[Provider]:
 
     if not ctx.attrs.package:
         fail("wasm_package: 'package' attribute is required (e.g., 'wasi:cli' or 'wasi:http@0.2.0')")
+    if ctx.attrs.expected_sha256 != None and not _SHA256.match(ctx.attrs.expected_sha256):
+        fail("wasm_package: expected_sha256 must contain exactly 64 hexadecimal characters")
+    if not _PINNED_PACKAGE.match(ctx.attrs.package) and ctx.attrs.expected_sha256 == None and not ctx.attrs.allow_unpinned:
+        fail("wasm_package: package must include an exact @version or expected_sha256; set allow_unpinned = True to opt out")
 
     wkg_info = ctx.attrs._wkg_toolchain[WkgInfo]
 
@@ -917,6 +887,15 @@ def _wasm_package_impl(ctx: AnalysisContext) -> list[Provider]:
         cmd.add("--cache")
         cmd.add(ctx.attrs.cache)
 
+    if ctx.attrs.expected_sha256 != None:
+        cmd = cmd_args(
+            ctx.attrs._wkg_get_wrapper[RunInfo],
+            "--output", output_file.as_output(),
+            "--sha256", ctx.attrs.expected_sha256,
+            "--",
+            cmd,
+        )
+
     ctx.actions.run(cmd, category = "wasm_package")
 
     # Determine what kind of WasmInfo to provide
@@ -944,6 +923,15 @@ wasm_package = rule(
     attrs = {
         "package": attrs.string(
             doc = "Package specification as 'namespace:name' or 'namespace:name@version' (e.g., 'wasi:cli' or 'wasi:http@0.2.0')",
+        ),
+        "expected_sha256": attrs.option(
+            attrs.string(),
+            default = None,
+            doc = "Optional SHA-256 digest required for the downloaded package",
+        ),
+        "allow_unpinned": attrs.bool(
+            default = False,
+            doc = "Allow a package without an exact version or expected digest (non-reproducible)",
         ),
         "output": attrs.option(
             attrs.string(),
@@ -974,6 +962,10 @@ wasm_package = rule(
             default = "toolchains//:wkg",
             providers = [WkgInfo],
         ),
+        "_wkg_get_wrapper": attrs.default_only(attrs.exec_dep(
+            default = "wasmono//tools:wkg_get",
+            providers = [RunInfo],
+        )),
     },
     doc = "Downloads a Wasm package from a registry",
 )
@@ -992,7 +984,6 @@ def _wit_library_impl(ctx: AnalysisContext) -> list[Provider]:
     """
 
     wkg_info = ctx.attrs._wkg_toolchain[WkgInfo]
-    python = ctx.attrs._python_bootstrap_toolchain[PythonBootstrapToolchainInfo].interpreter
 
     # Declare output directory to hold the WIT + resolved deps
     output_dir = ctx.actions.declare_output(ctx.label.name, dir = True)
@@ -1001,8 +992,7 @@ def _wit_library_impl(ctx: AnalysisContext) -> list[Provider]:
         fail("wit_library: at least one WIT input is required")
 
     cmd = cmd_args(
-        python,
-        ctx.attrs._wit_fetch_wrapper,
+        ctx.attrs._wit_fetch_wrapper[RunInfo],
         "--out-dir", output_dir.as_output(),
     )
     for src in wit_inputs:
@@ -1046,12 +1036,9 @@ wit_library = rule(
             default = "toolchains//:wkg",
             providers = [WkgInfo],
         ),
-        "_python_bootstrap_toolchain": attrs.default_only(attrs.toolchain_dep(
-            default = "toolchains//:python_bootstrap",
-            providers = [PythonBootstrapToolchainInfo],
-        )),
-        "_wit_fetch_wrapper": attrs.default_only(attrs.source(
+        "_wit_fetch_wrapper": attrs.default_only(attrs.exec_dep(
             default = "wasmono//tools:wit_fetch",
+            providers = [RunInfo],
         )),
     },
     doc = "Defines a WIT library with automatic dependency resolution via wkg wit fetch",
@@ -1074,7 +1061,7 @@ def _wasm_opt_impl(ctx: AnalysisContext) -> list[Provider]:
     cmd.add("-o")
     cmd.add(output_file.as_output())
 
-    _OPT_LEVELS = {
+    opt_levels = {
         "o": "-O",
         "o1": "-O1",
         "o2": "-O2",
@@ -1084,7 +1071,7 @@ def _wasm_opt_impl(ctx: AnalysisContext) -> list[Provider]:
         "oz": "-Oz",
     }
 
-    cmd.add(_OPT_LEVELS[ctx.attrs.optimization])
+    cmd.add(opt_levels[ctx.attrs.optimization])
 
     for flag in ctx.attrs.extra_flags:
         cmd.add(flag)
@@ -1139,8 +1126,11 @@ def _wasm_compose_impl(ctx: AnalysisContext) -> list[Provider]:
     output_name = ctx.attrs.output if ctx.attrs.output else "{}.composed.wasm".format(ctx.label.name)
     output_file = ctx.actions.declare_output(output_name)
 
-    cmd = cmd_args(wac_info.compose)
-    cmd.add(ctx.attrs.wac_file)
+    cmd = cmd_args(
+        ctx.attrs._compose_wrapper[RunInfo],
+        "--source", ctx.attrs.wac_file,
+        "--output", output_file.as_output(),
+    )
 
     # Add --dep name=artifact mappings
     for name, dep in ctx.attrs.deps.items():
@@ -1148,8 +1138,7 @@ def _wasm_compose_impl(ctx: AnalysisContext) -> list[Provider]:
         cmd.add("--dep")
         cmd.add(cmd_args(name, "=", comp, delimiter = ""))
 
-    cmd.add("--output")
-    cmd.add(output_file.as_output())
+    cmd.add("--", wac_info.wac)
 
     ctx.actions.run(cmd, category = "wasm_compose")
 
@@ -1172,7 +1161,7 @@ wasm_compose = rule(
             key = attrs.string(),
             value = attrs.transition_dep(cfg = wasm_transition),
             default = {},
-            doc = "Map of WAC dependency names to Buck2 targets (e.g. {'my:service': '//svc:component'})",
+            doc = "Explicit map of all WAC package references to component targets; version-qualified keys override unversioned keys",
         ),
         "output": attrs.option(
             attrs.string(),
@@ -1183,8 +1172,12 @@ wasm_compose = rule(
             default = "toolchains//:wac",
             providers = [WacInfo],
         ),
+        "_compose_wrapper": attrs.default_only(attrs.exec_dep(
+            default = "wasmono//tools:wac_compose",
+            providers = [RunInfo],
+        )),
     },
-    doc = "Composes WASM components using a WAC composition file and 'wac compose'",
+    doc = "Composes explicitly declared component dependencies using WAC without implicit registry or filesystem lookup",
 )
 
 # ============================================================================
@@ -1412,7 +1405,6 @@ def _wasm_test_impl(ctx: AnalysisContext) -> list[Provider]:
     """Test a WASM component by running it via wasmtime and checking exit code."""
     component_file = _resolve_component_from_deps([ctx.attrs.component])
     wasmtime_info = ctx.attrs._wasmtime_toolchain[WasmtimeInfo]
-    python = ctx.attrs._python_bootstrap_toolchain[PythonBootstrapToolchainInfo].interpreter
 
     cmd = _build_wasmtime_cmd(wasmtime_info, component_file, ctx.attrs)
 
@@ -1420,9 +1412,11 @@ def _wasm_test_impl(ctx: AnalysisContext) -> list[Provider]:
     needs_wrapper = expected != 0 or (ctx.attrs.isolate_dirs and len(ctx.attrs.wasi_dirs) > 0)
 
     if needs_wrapper:
-        wrapper_cmd = cmd_args(python, ctx.attrs._test_wrapper)
+        wrapper_cmd = cmd_args(ctx.attrs._test_wrapper[RunInfo])
         wrapper_cmd.add("--expected-exit-code", str(expected))
-        wrapper_cmd.add(cmd_args([cmd_args("--isolate-dir", d) for d in ctx.attrs.wasi_dirs]))
+        wrapper_cmd.add("--guest-args-count", str(len(ctx.attrs.args)))
+        if ctx.attrs.isolate_dirs:
+            wrapper_cmd.add(cmd_args([cmd_args("--isolate-dir", d) for d in ctx.attrs.wasi_dirs]))
         wrapper_cmd.add("--")
         wrapper_cmd.add(cmd)
         test_cmd = wrapper_cmd
@@ -1453,15 +1447,12 @@ wasm_test = rule(
         ),
         "isolate_dirs": attrs.bool(
             default = False,
-            doc = "Copy wasi_dirs to a temp directory before running, ensuring test isolation.",
+            doc = "Copy host directories before running without changing guest mount names or arguments.",
         ),
-        "_test_wrapper": attrs.source(
+        "_test_wrapper": attrs.exec_dep(
             default = "wasmono//tools:test_wrapper",
+            providers = [RunInfo],
         ),
-        "_python_bootstrap_toolchain": attrs.default_only(attrs.toolchain_dep(
-            default = "toolchains//:python_bootstrap",
-            providers = [PythonBootstrapToolchainInfo],
-        )),
     }, **_WASMTIME_COMMON_ATTRS) | buck.inject_test_env_arg() | buck.labels_arg() | buck.contacts_arg(),
     doc = "Tests a WASM component by running it with 'wasmtime run' and checking exit code. Use with 'buck2 test'.",
 )

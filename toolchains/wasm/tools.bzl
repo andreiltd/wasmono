@@ -4,7 +4,7 @@ WASM-Tools is a collection of utilities for working with WebAssembly modules,
 including parsing, validation, optimization, and component model operations.
 
 This toolchain provides a hermetic installation of wasm-tools and exposes
-common subcommands as convenient wrappers.
+common subcommands as direct RunInfo command prefixes.
 
 ## Examples
 
@@ -16,7 +16,7 @@ load("//wasm:tools.bzl", "download_wasm_tools", "wasm_tools_toolchain")
 
 download_wasm_tools(
     name = "wasm_tools_dist",
-    version = "1.252.0",
+    version = "1.259.0",
 )
 
 wasm_tools_toolchain(
@@ -27,14 +27,7 @@ wasm_tools_toolchain(
 ```
 """
 
-load(
-    "@prelude//os_lookup:defs.bzl",
-    "ScriptLanguage",
-)
-load(
-    "@prelude//utils:cmd_script.bzl",
-    "cmd_script",
-)
+load("@prelude//:artifacts.bzl", "single_artifact")
 load(
     "@prelude//:prelude.bzl",
     "native",
@@ -68,7 +61,7 @@ WasmToolsDistributionInfo = provider(
 def _wasm_tools_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
     # Create a copy of the wasm-tools binary for easy access
     dst = ctx.actions.declare_output("wasm-tools" + ctx.attrs.suffix)
-    dist_output = ctx.attrs.dist[DefaultInfo].default_outputs[0]
+    dist_output = single_artifact(ctx.attrs.dist).default_output
     src = dist_output.project(ctx.attrs.prefix + "/wasm-tools" + ctx.attrs.suffix)
 
     ctx.actions.copy_file(dst.as_output(), src)
@@ -88,8 +81,8 @@ def _wasm_tools_distribution_impl(ctx: AnalysisContext) -> list[Provider]:
             version = ctx.attrs.version,
             arch = ctx.attrs.arch,
             os = ctx.attrs.os,
-            reactor_adapter = ctx.attrs.reactor_adapter[DefaultInfo].default_outputs[0],
-            command_adapter = ctx.attrs.command_adapter[DefaultInfo].default_outputs[0],
+            reactor_adapter = single_artifact(ctx.attrs.reactor_adapter).default_output,
+            command_adapter = single_artifact(ctx.attrs.command_adapter).default_output,
         ),
     ]
 
@@ -197,35 +190,18 @@ def _wasm_tools_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
     dist = ctx.attrs.distribution[WasmToolsDistributionInfo]
     wasm_tools = ctx.attrs.distribution[RunInfo]
 
-    # Create wrapper scripts for common wasm-tools subcommands
-    def create_subcommand(name, subcommand):
-        return cmd_script(
-            actions = ctx.actions,
-            name = name,
-            cmd = cmd_args(wasm_tools, subcommand),
-            language = ScriptLanguage("bat" if dist.os == "windows" else "sh"),
-        )
-
-    wasm_tools_component = create_subcommand("wasm_tools_component", "component")
-    wasm_tools_compose = create_subcommand("wasm_tools_compose", "compose")
-    wasm_tools_validate = create_subcommand("wasm_tools_validate", "validate")
-    wasm_tools_print = create_subcommand("wasm_tools_print", "print")
-    wasm_tools_parse = create_subcommand("wasm_tools_parse", "parse")
-    wasm_tools_strip = create_subcommand("wasm_tools_strip", "strip")
-    wasm_tools_metadata = create_subcommand("wasm_tools_metadata", "metadata")
-
     return [
         ctx.attrs.distribution[DefaultInfo],
         ctx.attrs.distribution[RunInfo],  # Direct access to wasm-tools binary
         WasmToolsInfo(
             wasm_tools = wasm_tools,
-            component = RunInfo(args = cmd_args(wasm_tools_component)),
-            compose = RunInfo(args = cmd_args(wasm_tools_compose)),
-            validate = RunInfo(args = cmd_args(wasm_tools_validate)),
-            print = RunInfo(args = cmd_args(wasm_tools_print)),
-            parse = RunInfo(args = cmd_args(wasm_tools_parse)),
-            strip = RunInfo(args = cmd_args(wasm_tools_strip)),
-            metadata = RunInfo(args = cmd_args(wasm_tools_metadata)),
+            component = RunInfo(args = cmd_args(wasm_tools, "component")),
+            compose = RunInfo(args = cmd_args(wasm_tools, "compose")),
+            validate = RunInfo(args = cmd_args(wasm_tools, "validate")),
+            print = RunInfo(args = cmd_args(wasm_tools, "print")),
+            parse = RunInfo(args = cmd_args(wasm_tools, "parse")),
+            strip = RunInfo(args = cmd_args(wasm_tools, "strip")),
+            metadata = RunInfo(args = cmd_args(wasm_tools, "metadata")),
             reactor_adapter = dist.reactor_adapter,
             command_adapter = dist.command_adapter,
         ),

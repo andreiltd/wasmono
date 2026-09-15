@@ -1,0 +1,4 @@
+package test:composition;
+
+let plug = new test:plug@1.2.3 {};
+export plug["api"] as "api";

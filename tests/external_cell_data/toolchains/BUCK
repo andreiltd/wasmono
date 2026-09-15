@@ -34,9 +34,10 @@ system_cxx_toolchain(
 remote_python_toolchain(name = "python", visibility = ["PUBLIC"])
 system_rust_toolchain(name = "rust", default_edition = "2024", visibility = ["PUBLIC"])
 
-wasm_demo_toolchains()
+wasm_demo_toolchains(asc_version = "0.28.20")
 
-download_wasi_sdk(name = "wasi_sdk", version = "33.0")
+download_wasi_sdk(name = "wasi_sdk", version = "34.0")
+alias(name = "shared_wasi_sdk", actual = ":wasi_sdk", visibility = ["PUBLIC"])
 cxx_wasi_toolchain(name = "cxx_wasi", distribution = ":wasi_sdk", visibility = ["PUBLIC"])
 cxx_wasi_toolchain(
     name = "cxx_wasi_p1",

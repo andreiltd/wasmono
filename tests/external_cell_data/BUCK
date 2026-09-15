@@ -1,6 +1,6 @@
 # Verify that wasmono rules load correctly as an external cell.
 # These loads exercise cross-package resolution within the external cell.
-load("@wasmono//:defs.bzl", "wasm_component")
+load("@wasmono//:defs.bzl", "wasm_component", "wasm_test")
 load(":transition_check.bzl", "wasip1_transition_check")
 
 genrule(
@@ -12,7 +12,10 @@ genrule(
 genrule(
     name = "transition_input",
     out = "transition.txt",
-    cmd = "echo transition > $OUT",
+    cmd = select({
+        "config//cpu:wasm32": "echo transition > $OUT",
+        "DEFAULT": "echo Expected the Prelude wasm32 configuration >&2 && exit 1",
+    }),
 )
 
 wasip1_transition_check(
@@ -30,4 +33,18 @@ wasm_component(
     name = "wasi_p1_command_component",
     module = ":wasi_p1_command",
     adapter = "command",
+)
+
+cxx_binary(
+    name = "isolation_command",
+    srcs = ["isolation.c"],
+    _cxx_toolchain = "toolchains//:cxx_wasi_p1",
+)
+
+wasm_test(
+    name = "directory_isolation",
+    component = ":isolation_command",
+    wasi_dirs = ["fixtures"],
+    isolate_dirs = True,
+    args = ["--dir", "fixtures"],
 )

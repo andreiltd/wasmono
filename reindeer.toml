@@ -27,8 +27,8 @@ target = "wasm32-wasi"
 [buck]
 rust_library = "cargo.rust_library"
 rust_binary = "cargo.rust_binary"
-cxx_library = "third_party_rust_cxx_library"
-prebuilt_cxx_library = "third_party_rust_prebuilt_cxx_library"
+cxx_library = "third_party_rust.cxx_library"
+prebuilt_cxx_library = "third_party_rust.prebuilt_cxx_library"
 buildscript_genrule = "buildscript_run"
 
 generated_file_header = """
@@ -38,5 +38,5 @@ generated_file_header = """
 buckfile_imports = """
 load("@prelude//rust:cargo_buildscript.bzl", "buildscript_run")
 load("@prelude//rust:cargo_package.bzl", "cargo")
-load("//third-party/macros:rust_third_party.bzl", "third_party_rust_cxx_library", "third_party_rust_prebuilt_cxx_library")
+load("//third-party/macros:rust_third_party.bzl", "third_party_rust")
 """

@@ -1,0 +1,1 @@
+This default output is deliberately not a WIT interface.

@@ -1,7 +1,9 @@
+load("@prelude//transitions:utils.bzl", "transition_utils")
+
 _WASM_REFS = {
     "cpu": "config//cpu/constraints:cpu",
     "os": "config//os/constraints:os",
-    "wasm32": "config//cpu/constraints:wasm32",
+    "wasm32": "wasmono//wasm/constraints:wasm32",
     "wasi": "config//os/constraints:wasi",
 }
 
@@ -24,11 +26,10 @@ def _wasm_transition_impl(platform: PlatformInfo, refs: struct) -> PlatformInfo:
     if current_cpu == wasm32_value and current_os == wasi_value:
         return platform
 
-    new_constraints = {}
-    for setting_label, value in platform.configuration.constraints.items():
-        if (setting_label != cpu_setting.label and
-            setting_label != os_setting.label):
-            new_constraints[setting_label] = value
+    new_constraints = transition_utils.filtered_platform_constraints(
+        platform,
+        [cpu_setting.label, os_setting.label],
+    )
 
     new_constraints[cpu_setting.label] = wasm32_value
     new_constraints[os_setting.label] = wasi_value
@@ -50,12 +51,10 @@ def _wasm_transition_with_version(platform: PlatformInfo, refs: struct, wasi_ver
     wasm32_value = refs.wasm32[ConstraintValueInfo]
     wasi_value = refs.wasi[ConstraintValueInfo]
 
-    new_constraints = {}
-    for setting_label, value in platform.configuration.constraints.items():
-        if (setting_label != cpu_setting.label and
-            setting_label != os_setting.label and
-            setting_label != version_setting.label):
-            new_constraints[setting_label] = value
+    new_constraints = transition_utils.filtered_platform_constraints(
+        platform,
+        [cpu_setting.label, os_setting.label, version_setting.label],
+    )
 
     new_constraints[cpu_setting.label] = wasm32_value
     new_constraints[os_setting.label] = wasi_value
